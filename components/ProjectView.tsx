@@ -126,6 +126,14 @@ export default function ProjectView() {
     });
   };
   const restoreSubject = (sid: number) => run(() => api.restoreProjectSubject(sid));
+  const reorderSubjects = (ids: number[]) => {
+    setData((d) => {
+      if (!d) return d;
+      const byId = new Map(d.subjects.map((x) => [x.id, x]));
+      return { ...d, subjects: ids.map((i) => byId.get(i)).filter((x): x is ProjectSubject => !!x) };
+    });
+    run(() => api.reorderProjectSubjects(id, ids));
+  };
   const addTicket = (p: { title: string; date: string; subject: number; assignee: number | null }) => run(() => api.addTicket(id, p));
   const deleteTicket = (t: ProjectTicket) => run(() => api.deleteTicket(t.id));
 
@@ -242,6 +250,7 @@ export default function ProjectView() {
             onSubjectRename={renameSubject}
             onSubjectDelete={deleteSubject}
             onSubjectRestore={restoreSubject}
+            onSubjectReorder={reorderSubjects}
           />
         </section>
 

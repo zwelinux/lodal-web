@@ -76,6 +76,9 @@ export const api = {
   renameSubject: (id: number, name: string) =>
     call<Subject>(`/subjects/${id}`, { method: "PATCH", body: body({ name }) }),
   deleteSubject: (id: number) => call<DeleteResult>(`/subjects/${id}`, { method: "DELETE" }),
+  reorderSubjects: (ids: number[]) => call<{ ok: boolean }>("/subjects/reorder", { method: "POST", body: body({ ids }) }),
+  reorderProjectSubjects: (projectId: number, ids: number[]) =>
+    call<{ ok: boolean }>(`/projects/${projectId}/subjects/reorder`, { method: "POST", body: body({ ids }) }),
   restoreSubject: (id: number) => call<Subject>(`/subjects/${id}`, { method: "PATCH", body: body({ archived: false }) }),
   saveCell: (subject: number, date: string, text: string) =>
     call<Entry>("/entries", { method: "PUT", body: body({ subject, date, text }) }),

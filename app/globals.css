@@ -483,3 +483,21 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .legalFoot a, .landFoot a, .authLinks a { color: var(--muted); }
 .landFoot { display: flex; gap: 18px; justify-content: center; margin-top: 40px; font-size: 14px; }
 .authLinks { display: flex; gap: 14px; justify-content: center; font-size: 12px; margin-top: 6px; }
+
+/* reorder subjects by dragging, and hide for the day */
+.subjGrip { flex: none; width: 16px; height: 32px; margin: 6px 0 0 -4px; padding: 0; border: 0; background: none; color: var(--muted); cursor: grab; opacity: 0; font-size: 13px; letter-spacing: -2px; border-radius: 6px; }
+.gSubj:hover .subjGrip, .subjGrip:focus-visible { opacity: 1; }
+.subjGrip:hover { color: var(--fg); background: var(--head); }
+.subjGrip:active { cursor: grabbing; }
+.gSubj.dragging { opacity: .4; }
+.gSubj.dropBefore { box-shadow: inset 0 3px 0 var(--accent); background: var(--accent-soft); }
+.gSubj.dropAfter { box-shadow: inset 0 -3px 0 var(--accent); background: var(--accent-soft); }
+.gSubj:hover .hideBtn { opacity: 1; }
+.hideBtn { display: inline-grid; place-items: center; }
+.manageRow .x[disabled] { opacity: .2; cursor: default; }
+
+/* subject label: the small buttons float over the right edge on hover so the name keeps its width */
+.gSubj { position: relative; }
+.gSubj .x { position: absolute; right: 2px; top: 10px; width: 26px; height: 26px; margin: 0; background: var(--bg); border-radius: 8px; z-index: 1; }
+.gSubj .hideBtn { right: 30px; }
+.subjGrip { width: 14px; margin-left: -6px; }

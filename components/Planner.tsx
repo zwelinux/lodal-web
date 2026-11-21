@@ -5,6 +5,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, token, type AssignedTicket, type Subject, type User } from "@/lib/api";
 import { addDays, dayNum, toISO, longDay, monthShort, rangeLabel, today, weekdayShort, weekDays, weekStart } from "@/lib/dates";
 import { useDismiss } from "@/lib/useDismiss";
+import { useSubjectDnd } from "@/lib/useSubjectDnd";
 import { useIsPhone } from "@/lib/useIsPhone";
 import { applyTheme, effectiveTheme, getTheme, type ThemeChoice } from "@/lib/theme";
 import AdBanner from "./AdBanner";
@@ -16,6 +17,23 @@ import ViewToggle from "./ViewToggle";
 import { countTasks, parseTasks, serializeTasks, TASK_MIME, type DragPayload } from "@/lib/tasks";
 import AutoTextarea from "./AutoTextarea";
 import TaskList from "./TaskList";
+
+const HIDE_DAY_KEY = "lodal.hideForDay";
+/** Subjects hidden for one day, kept on this device. Entries older than yesterday are dropped. */
+function loadHideDay(): Record<string, number[]> {
+  try {
+    const raw = JSON.parse(localStorage.getItem(HIDE_DAY_KEY) || "{}") as Record<string, number[]>;
+    const keep = addDays(today(), -1);
+    return Object.fromEntries(Object.entries(raw).filter(([d]) => d >= keep));
+  } catch {
+    return {};
+  }
+}
+function swap(ids: number[], a: number, b: number): number[] {
+  const next = [...ids];
+  [next[a], next[b]] = [next[b], next[a]];
+  return next;
+}
 
 type Cells = Record<string, string>; // key = `${subjectId}|${date}`
 type Sync = "saved" | "saving" | "offline";
@@ -37,6 +55,7 @@ function PlannerInner() {
   const [user, setUser] = useState<User | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [hiddenSubjects, setHiddenSubjects] = useState<Subject[]>([]);
+  const [hideDay, setHideDay] = useState<Record<string, number[]>>(() => (typeof window === "undefined" ? {} : loadHideDay()));
   const [cells, setCells] = useState<Cells>({});
   const [assigned, setAssigned] = useState<AssignedTicket[]>([]);
   const [day, setDay] = useState(today());
@@ -254,6 +273,28 @@ function PlannerInner() {
     }
   }
 
+  // Save the order the person dragged the subjects into. Subjects hidden for the day keep their own place.
+  function reorderSubjects(visibleOrder: number[]) {
+    const full = subjects.map((x) => x.id);
+    const visible = new Set(visibleOrder);
+    let k = 0;
+    const merged = full.map((id) => (visible.has(id) ? visibleOrder[k++] : id));
+    const byId = new Map(subjects.map((x) => [x.id, x]));
+    setSubjects(merged.map((id) => byId.get(id)!));
+    api.reorderSubjects(merged).catch((e) => {
+      if (!bail(e)) setSync("offline");
+      load();
+    });
+  }
+  const writeHideDay = (next: Record<string, number[]>) => {
+    setHideDay(next);
+    try {
+      localStorage.setItem(HIDE_DAY_KEY, JSON.stringify(next));
+    } catch {}
+  };
+  const hideForDay = (id: number) => writeHideDay({ ...hideDay, [day]: [...(hideDay[day] ?? []), id] });
+  const showForDay = (id: number) => writeHideDay({ ...hideDay, [day]: (hideDay[day] ?? []).filter((x) => x !== id) });
+
   async function startUpgrade() {
     try {
       const { url } = await api.checkout();
@@ -282,6 +323,10 @@ function PlannerInner() {
 
   const days = phone ? weekDays(day) : view === "week" ? Array.from({ length: 7 }, (_, i) => addDays(day, i)) : [day];
   const step = phone || view === "today" ? 1 : 7;
+  const dayMode = !phone && view === "today";
+  const hiddenIdsToday = new Set(hideDay[day] ?? []);
+  const shownSubjects = dayMode ? subjects.filter((x) => !hiddenIdsToday.has(x.id)) : subjects;
+  const hiddenToday = dayMode ? subjects.filter((x) => hiddenIdsToday.has(x.id)) : [];
   const dateNav = (
     <DateNav
       day={day}
@@ -377,12 +422,13 @@ function PlannerInner() {
         </div>
       )}
 
-      {!phone && view === "today" && <Hero day={day} subjects={subjects} cells={cells} assigned={assigned} nav={dateNav} />}
+      {!phone && view === "today" && <Hero day={day} subjects={shownSubjects} cells={cells} assigned={assigned} nav={dateNav} />}
 
       {phone ? (
         <DayView
           hiddenSubjects={hiddenSubjects}
           restoreSubject={restoreSubject}
+          reorderSubjects={reorderSubjects}
           assigned={assigned}
           toggleTicket={toggleTicket}
           day={day}
@@ -400,6 +446,7 @@ function PlannerInner() {
         <WeekGrid
           hiddenSubjects={hiddenSubjects}
           restoreSubject={restoreSubject}
+          reorderSubjects={reorderSubjects}
           assigned={assigned}
           toggleTicket={toggleTicket}
           moveTask={moveTask}
@@ -409,7 +456,11 @@ function PlannerInner() {
             if (v === "today") setDay(today());
           }}
           days={days}
-          subjects={subjects}
+          subjects={shownSubjects}
+          hideForDay={dayMode ? hideForDay : undefined}
+          showForDay={showForDay}
+          hiddenToday={hiddenToday}
+          dayIsToday={day === today()}
           cells={cells}
           setCell={setCell}
           addSubject={addSubject}
@@ -452,6 +503,7 @@ type SubjectActions = {
   removeSubject: (s: Subject) => void;
   hiddenSubjects: Subject[];
   restoreSubject: (id: number) => void;
+  reorderSubjects: (ids: number[]) => void;
 };
 
 function AddSubject({ onAdd }: { onAdd: (name: string) => void }) {
@@ -498,8 +550,9 @@ function SubjectName({ s, rename }: { s: Subject; rename: (id: number, n: string
 
 const subjColor = (i: number) => `hsl(${(i * 57 + 165) % 360} 52% 56%)`;
 
-function WeekGrid({ days, view, setView, moveTask, assigned, toggleTicket, hiddenSubjects, restoreSubject, subjects, cells, setCell, addSubject, renameSubject, removeSubject }: SubjectActions & { days: string[]; view: "today" | "week"; setView: (v: "today" | "week") => void; moveTask: (p: DragPayload, toSid: number, toDate: string) => void }) {
+function WeekGrid({ days, view, setView, moveTask, assigned, toggleTicket, hiddenSubjects, restoreSubject, reorderSubjects, hideForDay, showForDay, hiddenToday, dayIsToday, subjects, cells, setCell, addSubject, renameSubject, removeSubject }: SubjectActions & { hideForDay?: (id: number) => void; showForDay: (id: number) => void; hiddenToday: Subject[]; dayIsToday: boolean; days: string[]; view: "today" | "week"; setView: (v: "today" | "week") => void; moveTask: (p: DragPayload, toSid: number, toDate: string) => void }) {
   const t = today();
+  const dnd = useSubjectDnd(subjects.map((x) => x.id), reorderSubjects);
   return (
     <main className={`gridWrap ${view === "today" ? "oneDay" : ""}`}>
       <div className="gridTools">
@@ -525,10 +578,20 @@ function WeekGrid({ days, view, setView, moveTask, assigned, toggleTicket, hidde
           </div>
         ))}
         {subjects.map((s, i) => (
-          <div key={s.id} style={{ display: "contents", "--sc": subjColor(i) } as React.CSSProperties}>
-            <div className="gSubj">
+          <div key={s.id} {...dnd.row(s.id)} style={{ display: "contents", "--sc": subjColor(i) } as React.CSSProperties}>
+            <div className={`gSubj ${dnd.cls(s.id)}`}>
+              <button className="subjGrip" aria-label={`Move ${s.name}. Drag it, or press the up or down arrow key.`} title="Drag to reorder" {...dnd.handle(s.id)}>
+                ⋮⋮
+              </button>
               <i className="swatch" />
               <SubjectName key={s.name} s={s} rename={renameSubject} />
+              {hideForDay && (
+                <button className="x hideBtn" aria-label={dayIsToday ? `Hide ${s.name} for today` : `Hide ${s.name} for this day`} title={dayIsToday ? "Hide for today" : "Hide for this day"} onClick={() => hideForDay(s.id)}>
+                  <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 3l14 14M8.4 5.2A8 8 0 0 1 10 5c4 0 6.500 3.200 7.500 5a12 12 0 0 1-2.300 2.900M6.100 6.600A12 12 0 0 0 2.500 10c1 1.800 3.500 5 7.500 5 1.200 0 2.200-.3 3.100-.7M8.300 8.300a2 2 0 0 0 2.800 2.800" />
+                  </svg>
+                </button>
+              )}
               <button className="x" aria-label={`Delete ${s.name}`} onClick={() => removeSubject(s)}>
                 ×
               </button>
@@ -555,6 +618,7 @@ function WeekGrid({ days, view, setView, moveTask, assigned, toggleTicket, hidde
       {subjects.length === 0 && assigned.length === 0 && <p className="empty">Add your first subject to begin, for example “Work” or “Family”.</p>}
       <AddSubject onAdd={addSubject} />
       <HiddenList label="Hidden subjects" items={hiddenSubjects} onRestore={restoreSubject} />
+      {hideForDay && <HiddenList label={dayIsToday ? "Hidden for today" : "Hidden for this day"} items={hiddenToday} onRestore={showForDay} />}
     </main>
   );
 }
@@ -728,6 +792,7 @@ function DayView({
   toggleTicket,
   hiddenSubjects,
   restoreSubject,
+  reorderSubjects,
   addSubject,
   renameSubject,
   removeSubject,
@@ -773,8 +838,14 @@ function DayView({
       </button>
       {manage && (
         <div className="card">
-          {subjects.map((s) => (
+          {subjects.map((s, i) => (
             <div key={s.id} className="manageRow">
+              <button className="x show" aria-label={`Move ${s.name} up`} disabled={i === 0} onClick={() => reorderSubjects(swap(subjects.map((x) => x.id), i, i - 1))}>
+                ↑
+              </button>
+              <button className="x show" aria-label={`Move ${s.name} down`} disabled={i === subjects.length - 1} onClick={() => reorderSubjects(swap(subjects.map((x) => x.id), i, i + 1))}>
+                ↓
+              </button>
               <SubjectName key={s.name} s={s} rename={renameSubject} />
               <button className="x show" aria-label={`Delete ${s.name}`} onClick={() => removeSubject(s)}>
                 Delete

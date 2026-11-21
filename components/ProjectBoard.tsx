@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import type { Member, ProjectDetail, ProjectSubject, ProjectTicket } from "@/lib/api";
 import { addDays, dayNum, monthShort, today, weekdayShort } from "@/lib/dates";
+import { useSubjectDnd } from "@/lib/useSubjectDnd";
 import { useIsPhone } from "@/lib/useIsPhone";
 import AutoTextarea from "./AutoTextarea";
 import HiddenList from "./HiddenList";
@@ -25,6 +26,7 @@ type Props = {
   onSubjectRename: (id: number, name: string) => void;
   onSubjectDelete: (s: ProjectSubject) => void;
   onSubjectRestore: (id: number) => void;
+  onSubjectReorder: (ids: number[]) => void;
 };
 
 export default function ProjectBoard(p: Props) {
@@ -36,6 +38,7 @@ export default function ProjectBoard(p: Props) {
   const days = phone || p.view === "today" ? [day] : Array.from({ length: 7 }, (_, i) => addDays(day, i));
   const shown = tickets.filter((x) => p.filter === "all" || x.assignee === p.me);
   const firstSubject = subjects[0]?.id;
+  const dnd = useSubjectDnd(subjects.map((x) => x.id), p.onSubjectReorder);
   // tickets always belong to a subject; if an old one has none, show it in the first row
   const cellTickets = (sid: number, d: string) => shown.filter((x) => (x.subject ?? firstSubject) === sid && x.date === d);
 
@@ -95,8 +98,11 @@ export default function ProjectBoard(p: Props) {
           </div>
         ))}
         {subjects.map((s, i) => (
-          <div key={s.id} style={{ display: "contents", "--sc": subjColor(i) } as React.CSSProperties}>
-            <div className="gSubj">
+          <div key={s.id} {...dnd.row(s.id)} style={{ display: "contents", "--sc": subjColor(i) } as React.CSSProperties}>
+            <div className={`gSubj ${dnd.cls(s.id)}`}>
+              <button className="subjGrip" aria-label={`Move ${s.name}. Drag it, or press the up or down arrow key.`} title="Drag to reorder" {...dnd.handle(s.id)}>
+                ⋮⋮
+              </button>
               <i className="swatch" />
               <SubjName key={s.name} s={s} onRename={p.onSubjectRename} />
               {isOwner && subjects.length > 1 && (
