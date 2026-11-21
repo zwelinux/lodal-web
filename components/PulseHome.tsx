@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, token, type PulseData } from "@/lib/api";
 import SimpleBar from "./SimpleBar";
+import WorldMap, { mapPos } from "./WorldMap";
 
 function ago(iso: string): string {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
@@ -10,24 +11,16 @@ function ago(iso: string): string {
   if (s < 3600) return `${Math.floor(s / 60)} min ago`;
   return `${Math.floor(s / 3600)} h ago`;
 }
-const hue = (id: number) => `hsl(${(id * 67) % 360} 55% 48%)`;
 
-function Face({ id, name }: { id: number; name: string }) {
-  return (
-    <span className="avatar" style={{ background: hue(id) }} aria-hidden="true">
-      {name.slice(0, 1).toUpperCase()}
-    </span>
-  );
-}
-
-/** The public page: you are not alone. Anonymous numbers for everyone, and people who chose to be seen. */
+/** The public page: you are not alone. A world of lights, one for each person planning right now. */
 export default function PulseHome() {
   const router = useRouter();
   const [data, setData] = useState<PulseData | null>(null);
   const [error, setError] = useState("");
   const [nick, setNick] = useState("");
   const [busy, setBusy] = useState(false);
-  const [popped, setPopped] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [popped, setPopped] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -66,24 +59,28 @@ export default function PulseHome() {
     setBusy(false);
   }
 
-  async function clap(id: number) {
-    setPopped(id);
-    setTimeout(() => setPopped(null), 600);
-    setData((d) => (d ? { ...d, feed: d.feed.map((f) => (f.id === id && !f.clapped ? { ...f, clapped: true, claps: f.claps + 1 } : f)) } : d));
+  async function clap(eventId: number) {
+    setPopped(true);
+    setTimeout(() => setPopped(false), 600);
+    setData((d) => (d ? { ...d, dots: d.dots.map((p) => (p.event?.id === eventId && !p.event.clapped ? { ...p, event: { ...p.event, clapped: true, claps: p.event.claps + 1 } } : p)) } : d));
     try {
-      await api.pulseClap(id);
+      await api.pulseClap(eventId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not clap.");
       load();
     }
   }
 
+  const sel = data?.dots.find((d) => d.key === selected) ?? null;
+  const pos = sel ? { left: `${(mapPos.x(sel.lon) / mapPos.W) * 100}%`, top: `${(mapPos.y(sel.lat) / mapPos.H) * 100}%` } : null;
+  const flip = sel ? mapPos.x(sel.lon) / mapPos.W > 0.6 : false; // open the card towards the middle of the map
+
   return (
     <div className="app narrow">
       <SimpleBar />
       <main className="projWrap pulsePage">
         <h1 className="pageTitle">Pulse</h1>
-        <p className="pageSub">You are not alone. Right now, other people are planning and getting things done too.</p>
+        <p className="pageSub">You are not alone. Right now, people around the world are planning too.</p>
 
         {error && (
           <p className="error" role="alert">
@@ -91,21 +88,42 @@ export default function PulseHome() {
           </p>
         )}
 
-        <section className="pulseStats" aria-label="Right now">
-          <div className="stat">
-            <b>{data ? data.active_now : "–"}</b>
-            <span>
-              <i className="liveDot on" /> planning now
-            </span>
+        <section className="mapCard" aria-label="Who is here now">
+          <div className="mapHead">
+            <p className="mapCount">
+              <span className="liveDot on" /> <b>{data ? data.active_now : "–"}</b> active now <span className="mapOf">out of {data ? data.total_users : "–"} users</span>
+            </p>
           </div>
-          <div className="stat">
-            <b>{data ? data.done_today : "–"}</b>
-            <span>tasks done today</span>
+          <div className="mapWrap">
+            {data && <WorldMap dots={data.dots} selected={selected} onSelect={setSelected} />}
+            {sel && pos && (
+              <div className={`mapCardPop ${flip ? "flip" : ""}`} style={pos} role="dialog" aria-label={sel.nickname}>
+                <button className="x show" aria-label="Close" onClick={() => setSelected(null)}>
+                  ×
+                </button>
+                <b>{sel.mine ? `${sel.nickname} (you)` : sel.nickname}</b>
+                <span className="popLine">
+                  {sel.event ? (
+                    <>
+                      finished a task <small>{ago(sel.event.created_at)}</small>
+                    </>
+                  ) : (
+                    "is planning now"
+                  )}
+                </span>
+                {sel.event &&
+                  (sel.mine ? (
+                    <span className="clapCount">👏 {sel.event.claps}</span>
+                  ) : (
+                    <button className={`clapBtn ${sel.event.clapped ? "on" : ""} ${popped ? "pop" : ""}`} disabled={sel.event.clapped} onClick={() => clap(sel.event!.id)}>
+                      {sel.event.clapped ? "👏 You clapped" : `👏 Clap for ${sel.nickname}`}
+                      {sel.event.claps > 0 ? ` · ${sel.event.claps}` : ""}
+                    </button>
+                  ))}
+              </div>
+            )}
           </div>
-          <div className="stat">
-            <b>{data ? data.total_users : "–"}</b>
-            <span>people on Lodal</span>
-          </div>
+          <p className="mapHint">Each light is a person. Tap a named light to see what they did.</p>
         </section>
 
         {data && (
@@ -120,7 +138,7 @@ export default function PulseHome() {
             ) : (
               <>
                 <p>
-                  <b>Want to be seen?</b> Pick a nickname (not your email or real name) and others can cheer you on. You can hide again any time.
+                  <b>Want to be seen?</b> Pick a nickname (not your email or real name) and others can tap your light and cheer you on. Without one, you are an anonymous light. Your place on the map is only a region, from your device timezone.
                 </p>
                 <form
                   className="inviteForm"
@@ -138,44 +156,6 @@ export default function PulseHome() {
             )}
           </section>
         )}
-
-        {data && data.online.length > 0 && (
-          <section>
-            <h2 className="pulseH">Here now</h2>
-            <div className="pulseOnline">
-              {data.online.map((p) => (
-                <span key={p.id} className="person">
-                  <Face id={p.id} name={p.nickname} />
-                  {p.nickname}
-                </span>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <section>
-          <h2 className="pulseH">Just finished</h2>
-          {data && data.feed.length === 0 && <p className="pageSub">Nothing yet. Finish a task, and be the first to show up here.</p>}
-          <ul className="pulseFeed">
-            {data?.feed.map((f) => (
-              <li key={f.id}>
-                <Face id={f.user} name={f.nickname} />
-                <span className="pulseText">
-                  <b>{f.mine ? "You" : f.nickname}</b> finished a task <small>{ago(f.created_at)}</small>
-                </span>
-                {f.mine ? (
-                  <span className="clapCount" aria-label={`${f.claps} claps`}>
-                    👏 {f.claps}
-                  </span>
-                ) : (
-                  <button className={`clapBtn ${f.clapped ? "on" : ""} ${popped === f.id ? "pop" : ""}`} onClick={() => clap(f.id)} disabled={f.clapped} aria-label={f.clapped ? "You clapped" : `Clap for ${f.nickname}`}>
-                    👏 {f.claps > 0 ? f.claps : ""}
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
       </main>
     </div>
   );

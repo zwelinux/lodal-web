@@ -602,23 +602,36 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .adTag { color: var(--muted); font-size: 11px; }
 
 /* pulse */
-.pulseStats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0; }
-.pulseStats .stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 4px; }
-.pulseStats b { font-size: 32px; line-height: 1.1; }
-.pulseStats span { color: var(--muted); font-size: 13px; }
-.pulseJoin { background: var(--accent-soft); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 20px; }
+.pulseJoin { background: var(--accent-soft); border-radius: var(--radius); padding: 14px 16px; margin: 16px 0 20px; }
 .pulseJoin p { margin: 0 0 8px; }
 .pulseJoin p:last-child { margin: 0; }
-.pulseH { font-size: 14px; color: var(--muted); font-weight: 600; margin: 22px 0 10px; }
-.pulseOnline { display: flex; flex-wrap: wrap; gap: 8px; }
-.pulseFeed { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.pulseFeed li { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; }
-.pulseText { flex: 1; min-width: 0; }
-.pulseText small { color: var(--muted); margin-left: 6px; }
 .clapBtn, .clapCount { border: 1px solid var(--line); background: var(--head); color: var(--fg); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; }
 .clapBtn:hover:not(:disabled) { border-color: var(--accent); }
 .clapBtn.on { background: var(--accent-soft); border-color: var(--accent); cursor: default; }
 .clapCount { cursor: default; }
 .clapBtn.pop { animation: clapPop .5s ease; }
-@keyframes clapPop { 0% { transform: scale(1); } 40% { transform: scale(1.35) rotate(-8deg); } 100% { transform: scale(1); } }
-@media (max-width: 520px) { .pulseStats b { font-size: 24px; } .pulseStats .stat { padding: 12px; } }
+@keyframes clapPop { 0% { transform: scale(1); } 40% { transform: scale(1.18) rotate(-4deg); } 100% { transform: scale(1); } }
+.mapCard { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px 16px 12px; margin-top: 18px; }
+.mapHead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.mapCount { margin: 0; font-size: 15px; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.mapCount b { font-size: 28px; line-height: 1; }
+.mapOf { color: var(--muted); }
+.mapWrap { position: relative; }
+.worldMap { display: block; width: 100%; height: auto; }
+.landDots { stroke: var(--muted); stroke-width: 2.4; stroke-linecap: round; fill: none; opacity: .38; }
+.light .core { fill: var(--accent); }
+.light.rest .core { fill: var(--muted); opacity: .6; }
+.light .ring { fill: none; stroke: var(--accent); stroke-width: 1.2; transform-box: fill-box; transform-origin: center; animation: lightPulse 2.4s ease-out infinite; animation-delay: inherit; }
+.light .hit { fill: transparent; cursor: pointer; }
+.light.me .core { stroke: var(--fg); stroke-width: 1.2; }
+.light.open .core { filter: drop-shadow(0 0 3px var(--accent)); }
+.light.sel .core { fill: var(--fg); }
+.light:focus, .light:focus-visible { outline: none; }
+.light:focus-visible .core { stroke: var(--fg); stroke-width: 1.5; }
+@keyframes lightPulse { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(4.2); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .light .ring { animation: none; opacity: .35; } }
+.mapCardPop { position: absolute; transform: translate(-50%, calc(-100% - 14px)); min-width: 190px; max-width: 260px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 32px rgba(0,0,0,.35); padding: 12px 14px; display: grid; gap: 6px; z-index: 3; }
+.mapCardPop.flip { transform: translate(-85%, calc(-100% - 14px)); }
+.mapCardPop .x { position: absolute; top: 6px; right: 6px; }
+.mapCardPop .popLine small { color: var(--muted); margin-left: 4px; }
+.mapHint { margin: 8px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
