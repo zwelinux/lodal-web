@@ -704,3 +704,5 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .profFoot .linkBtn { color: var(--muted); font-size: 12px; }
 .mapCardPop { gap: 10px; }
 .profHead { padding-right: 24px; }
+.friendChips.requests { margin-bottom: 10px; }
+.friendChip.incoming { border-color: var(--accent); background: var(--accent-soft); }

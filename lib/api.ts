@@ -22,6 +22,7 @@ export type PulseLight = {
   last_seen?: string | null;
   checked?: boolean; // you already checked their pulse in the last hour
   relation?: "none" | "friend" | "requested" | "incoming";
+  request_id?: number | null; // their friend request to you, when relation is "incoming"
   events?: { id: number; created_at: string; claps: number; clapped: boolean }[];
 };
 export type PulseData = { total_users: number; active_now: number; windows: number; lights: PulseLight[]; me: { nickname: string; visible: boolean } };
@@ -136,7 +137,7 @@ export const api = {
       if (patch.done) void api.pulseDone();
       return t;
     }),
-  pulse: () => call<PulseData>("/pulse"),
+  pulse: (focus?: number | null) => call<PulseData>(`/pulse${focus ? `?focus=${focus}` : ""}`),
   pulseMe: (p: { nickname?: string; visible?: boolean }) => call<PulseData["me"]>("/pulse/me", { method: "PATCH", body: body(p) }),
   pulseDone: () => call<{ ok: boolean }>("/pulse/done", { method: "POST" }).catch(() => ({ ok: false })),
   pulseCheck: (userId: number) => call<{ checked: boolean }>(`/pulse/users/${userId}/check`, { method: "POST" }),

@@ -1,6 +1,6 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, token, type FriendsData, type PulseData } from "@/lib/api";
 import DirectChat from "./DirectChat";
 import ReportDialog from "./ReportDialog";
@@ -17,6 +17,13 @@ function ago(iso: string): string {
 /** The public page: you are not alone. A world of lights, one for each person planning right now. */
 export default function PulseHome() {
   const router = useRouter();
+  const params = useSearchParams();
+  const userParam = Number(params.get("user")) || null;
+  const chatParam = Number(params.get("chat")) || null;
+  const nonce = params.get("n");
+  const focusRef = useRef<number | null>(null); // someone a notification pointed at, who may be offline
+  const mapRef = useRef<HTMLElement>(null);
+  const [want, setWant] = useState<number | null>(userParam);
   const [data, setData] = useState<PulseData | null>(null);
   const [error, setError] = useState("");
   const [nick, setNick] = useState("");
@@ -30,7 +37,7 @@ export default function PulseHome() {
 
   const load = useCallback(async () => {
     try {
-      const [d, f, b] = await Promise.all([api.pulse(), api.friends(), api.blocks()]);
+      const [d, f, b] = await Promise.all([api.pulse(focusRef.current), api.friends(), api.blocks()]);
       setData(d);
       setFriends(f);
       setBlocked(b);
@@ -55,6 +62,38 @@ export default function PulseHome() {
       clearInterval(every);
     };
   }, [load, router]);
+
+  // a notification (or a request chip) points at one person: open their card in the city
+  useEffect(() => {
+    const t = setTimeout(() => setWant(userParam), 0);
+    return () => clearTimeout(t);
+  }, [userParam, nonce]);
+  useEffect(() => {
+    if (!want || !data) return;
+    const light = data.lights.find((l) => l.user === want);
+    if (light) {
+      const t = setTimeout(() => {
+        setSelected(light.slot);
+        setWant(null);
+        mapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 0);
+      return () => clearTimeout(t);
+    }
+    if (focusRef.current !== want) {
+      focusRef.current = want;
+      const t = setTimeout(load, 0);
+      return () => clearTimeout(t);
+    }
+  }, [want, data, load]);
+  // a message notification opens that friend's chat
+  useEffect(() => {
+    if (!chatParam || !friends) return;
+    const f = friends.friends.find((x) => x.user === chatParam);
+    if (f) {
+      const t = setTimeout(() => setChatWith({ user: f.user, nickname: f.nickname }), 0);
+      return () => clearTimeout(t);
+    }
+  }, [chatParam, friends]);
 
   async function setVisible(visible: boolean) {
     setBusy(true);
@@ -139,22 +178,17 @@ export default function PulseHome() {
         {friends && (friends.incoming.length > 0 || friends.friends.length > 0) && (
           <section className="friendsTop" aria-label="Friends">
             {friends.incoming.length > 0 && (
-              <ul className="friendList">
+              <div className="friendChips requests">
                 {friends.incoming.map((r) => (
-                  <li key={r.id}>
+                  <button key={r.id} className="friendChip incoming" onClick={() => (setSelected(null), setWant(r.user))} aria-label={`Friend request from ${r.nickname}. Open their profile`}>
                     <span className="avatar" style={{ background: `hsl(${(r.user * 67) % 360} 55% 48%)` }} aria-hidden="true">
                       {r.nickname.slice(0, 1).toUpperCase()}
                     </span>
-                    <span className="friendName">{r.nickname} wants to be your friend</span>
-                    <button className="btn primary" onClick={() => answer(r.id, true)}>
-                      Accept
-                    </button>
-                    <button className="btn" onClick={() => answer(r.id, false)}>
-                      Decline
-                    </button>
-                  </li>
+                    <span className="friendName">🤝 {r.nickname}</span>
+                    <span className="friendBadge">request</span>
+                  </button>
                 ))}
-              </ul>
+              </div>
             )}
             {friends.friends.length > 0 && (
               <>
@@ -184,7 +218,7 @@ export default function PulseHome() {
           </p>
         )}
 
-        <section className="mapCard" aria-label="Who is here now">
+        <section className="mapCard" aria-label="Who is here now" ref={mapRef}>
           <div className="mapHead">
             <p className="mapCount">
               <span className="liveDot on" /> <b>{data ? data.active_now : "–"}</b> active now <span className="mapOf">out of {data ? data.total_users : "–"} users</span>
@@ -226,9 +260,16 @@ export default function PulseHome() {
                         Request sent
                       </button>
                     ) : sel.relation === "incoming" ? (
-                      <button className="checkBtn on" onClick={() => addFriend(sel.user as number)}>
-                        🤝 Accept
-                      </button>
+                      <>
+                        <button className="checkBtn on" onClick={() => addFriend(sel.user as number)}>
+                          🤝 Accept friend
+                        </button>
+                        {sel.request_id ? (
+                          <button className="checkBtn" onClick={() => answer(sel.request_id as number, false)}>
+                            Decline
+                          </button>
+                        ) : null}
+                      </>
                     ) : (
                       <button className="checkBtn" onClick={() => addFriend(sel.user as number)}>
                         ➕ Add friend

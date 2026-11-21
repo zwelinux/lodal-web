@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type AppNotification } from "@/lib/api";
 import { useDismiss } from "@/lib/useDismiss";
 
+const freshNonce = () => Date.now(); // a new value each tap, so the same person can be opened again
+
 function ago(iso: string): string {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 60) return "just now";
@@ -50,7 +52,8 @@ export default function NotificationBell() {
       setUnread((u) => Math.max(0, u - 1));
       api.markRead({ ids: [n.id] }).catch(() => {});
     }
-    if (n.link.startsWith("/")) router.push(n.link);
+    if (n.link.startsWith("/app/pulse")) router.push(`${n.link}${n.link.includes("?") ? "&" : "?"}n=${freshNonce()}`); // the nonce lets the same person open again
+    else if (n.link.startsWith("/")) router.push(n.link);
     else if (n.link.startsWith("https://")) window.open(n.link, "_blank", "noopener,noreferrer");
   }
   async function markAll() {
