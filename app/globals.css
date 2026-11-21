@@ -543,7 +543,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 
 /* icon row next to the expand button */
 .gridTools { gap: 8px; }
-.toolIcons { display: flex; gap: 8px; align-items: center; }
+.toolIcons { display: flex; gap: 8px; align-items: center; margin-left: auto; }
 .toolWrap { position: relative; }
 .expandBtn { position: relative; }
 .expandBtn[aria-expanded="true"] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }

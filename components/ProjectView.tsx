@@ -32,7 +32,7 @@ export default function ProjectView() {
   const [me, setMe] = useState<number | null>(null);
   const [isPro, setIsPro] = useState(true); // assume paid until we know, so free users never see a flash and paid users never do
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState<"all" | "mine">("all");
+  const [filter] = useState<"all" | "mine">("all"); // the Everyone / Mine switch is hidden for now
   const [view, setView] = useState<"today" | "week">("today");
   const [day, setDay] = useState(today());
   const phone = useIsPhone();
@@ -157,17 +157,18 @@ export default function ProjectView() {
               label={phone ? longDay(day) : view === "today" ? `${weekdayShort(day)}, ${dayNum(day)} ${monthShort(day)}` : rangeLabel(days)}
             />
               <div className="projMeta">
-              <button className="peopleBtn" onClick={() => setPeopleOpen(true)} aria-haspopup="dialog">
+              <button
+                className="peopleBtn"
+                onClick={() => setPeopleOpen(true)}
+                aria-haspopup="dialog"
+                aria-label={`People: ${members.length}${invites.length ? `, ${invites.length} waiting to join` : ""}`}
+                title={`${members.length} ${members.length === 1 ? "person" : "people"}${invites.length ? `, ${invites.length} waiting` : ""}`}
+              >
                 <span className="avatarStack" aria-hidden="true">
                   {members.slice(0, 4).map((m) => (
                     <Avatar key={m.user_id} m={m} />
                   ))}
                 </span>
-                <span>
-                  {members.length} {members.length === 1 ? "person" : "people"}
-                </span>
-                {invites.length > 0 && <em>{invites.length} waiting</em>}
-                <i aria-hidden="true">▾</i>
               </button>
             </div>
             </div>
@@ -200,14 +201,6 @@ export default function ProjectView() {
 
         <section className="boardSection">
           <div className="boardTools">
-            <div className="seg" role="group" aria-label="Filter">
-              <button aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
-                Everyone
-              </button>
-              <button aria-pressed={filter === "mine"} onClick={() => setFilter("mine")}>
-                Mine
-              </button>
-            </div>
             <div className="toolIcons">
               <ProjectChat projectId={id} isOwner={project.is_owner} initialUnread={project.unread_chat ?? 0} />
               <AddSubjectButton onAdd={addSubject} />
