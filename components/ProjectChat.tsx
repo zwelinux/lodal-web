@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type ChatMessage } from "@/lib/api";
+import { api, chatSocketUrl, token, type ChatMessage } from "@/lib/api";
 
 function clock(iso: string): string {
   const d = new Date(iso);
@@ -8,12 +8,13 @@ function clock(iso: string): string {
   return d.toDateString() === new Date().toDateString() ? t : `${d.toLocaleDateString([], { day: "numeric", month: "short" })}, ${t}`;
 }
 
-/** The chat icon for a project and the panel that slides in from the left. */
-export default function ProjectChat({ projectId, isOwner, initialUnread }: { projectId: number; isOwner: boolean; initialUnread: number }) {
+/** A round chat button at the bottom right. It opens a small panel above it, so you can keep planning while you chat. */
+export default function ProjectChat({ projectId, me, isOwner, initialUnread }: { projectId: number; me: number | null; isOwner: boolean; initialUnread: number }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<ChatMessage[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [unread, setUnread] = useState(initialUnread);
+  const [live, setLive] = useState(false);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
@@ -21,6 +22,7 @@ export default function ProjectChat({ projectId, isOwner, initialUnread }: { pro
   const lastId = useRef(0);
   const stick = useRef(true); // keep the view at the newest message unless the reader scrolled up
   const openRef = useRef(false);
+  const liveRef = useRef(false);
 
   const merge = useCallback((fresh: ChatMessage[]) => {
     if (!fresh.length) return;
@@ -32,30 +34,90 @@ export default function ProjectChat({ projectId, isOwner, initialUnread }: { pro
     lastId.current = Math.max(lastId.current, ...fresh.map((m) => m.id));
   }, []);
 
-  // first load, then check for new messages every few seconds (faster while the panel is open)
+  const arrived = useCallback(
+    (fresh: ChatMessage[]) => {
+      merge(fresh);
+      if (!openRef.current) setUnread((u) => u + fresh.filter((m) => m.user !== me).length);
+    },
+    [merge, me],
+  );
+
+  // first load, and a slow safety check (fast only while the live connection is down)
   useEffect(() => {
     let stop = false;
     let timer: ReturnType<typeof setTimeout>;
     async function tick(first: boolean) {
-      if (document.visibilityState === "visible" || first) {
-        try {
-          const r = first ? await api.messages(projectId) : await api.messages(projectId, { after: lastId.current });
-          if (stop) return;
-          if (first) setHasMore(r.has_more);
+      try {
+        const r = first ? await api.messages(projectId) : await api.messages(projectId, { after: lastId.current });
+        if (stop) return;
+        if (first) {
+          setHasMore(r.has_more);
           merge(r.items);
-          if (!first && !openRef.current) setUnread((u) => u + r.items.filter((m) => !m.mine).length);
-        } catch {
-          /* offline: try again next time */
+        } else if (r.items.length) {
+          arrived(r.items);
         }
+      } catch {
+        /* offline: try again next time */
       }
-      if (!stop) timer = setTimeout(() => tick(false), openRef.current ? 4000 : 20000);
+      if (!stop) timer = setTimeout(() => tick(false), liveRef.current ? 60000 : openRef.current ? 4000 : 20000);
     }
     tick(true);
     return () => {
       stop = true;
       clearTimeout(timer);
     };
-  }, [projectId, merge]);
+  }, [projectId, merge, arrived]);
+
+  // the live connection: new messages appear the moment they are sent
+  useEffect(() => {
+    let stop = false;
+    let ws: WebSocket | null = null;
+    let retry: ReturnType<typeof setTimeout>;
+    let wait = 1000;
+    function connect() {
+      const t = token.get();
+      if (stop || !t) return;
+      try {
+        ws = new WebSocket(chatSocketUrl(projectId));
+      } catch {
+        return;
+      }
+      ws.onopen = () => ws?.send(JSON.stringify({ type: "auth", token: t }));
+      ws.onmessage = (e) => {
+        let d: { type: string; id?: number } & Partial<ChatMessage>;
+        try {
+          d = JSON.parse(e.data);
+        } catch {
+          return;
+        }
+        if (d.type === "ready") {
+          wait = 1000;
+          liveRef.current = true;
+          setLive(true);
+          api.messages(projectId, { after: lastId.current }).then((r) => r.items.length && arrived(r.items)).catch(() => {}); // catch up on anything missed
+        } else if (d.type === "message" && d.id) {
+          arrived([d as ChatMessage]);
+        } else if (d.type === "deleted" && d.id) {
+          setItems((cur) => cur.filter((m) => m.id !== d.id));
+        }
+      };
+      ws.onclose = () => {
+        liveRef.current = false;
+        setLive(false);
+        if (!stop) {
+          retry = setTimeout(connect, wait);
+          wait = Math.min(wait * 2, 30000);
+        }
+      };
+      ws.onerror = () => ws?.close();
+    }
+    connect();
+    return () => {
+      stop = true;
+      clearTimeout(retry);
+      ws?.close();
+    };
+  }, [projectId, arrived]);
 
   useEffect(() => {
     openRef.current = open;
@@ -112,17 +174,11 @@ export default function ProjectChat({ projectId, isOwner, initialUnread }: { pro
 
   return (
     <>
-      <button className="expandBtn chatBtn" aria-label={unread ? `Chat, ${unread} new` : "Chat"} aria-expanded={open} title="Chat" onClick={() => setOpen((v) => !v)}>
-        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3.5 5.5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-3.500 3v-3h0a2 2 0 0 1-2-2z" />
-        </svg>
-        {unread > 0 && <span className="toolBadge">{unread > 9 ? "9+" : unread}</span>}
-      </button>
-
-      {open && <div className="chatScrim" onClick={() => setOpen(false)} />}
-      <aside className={`chatDrawer ${open ? "open" : ""}`} aria-hidden={!open} aria-label="Project chat">
+      <aside className={`chatPanel ${open ? "open" : ""}`} aria-hidden={!open} aria-label="Project chat">
         <header className="chatHead">
-          <h2>Chat</h2>
+          <h2>
+            Chat <span className={`liveDot ${live ? "on" : ""}`} title={live ? "Live" : "Reconnecting…"} />
+          </h2>
           <button className="x show" aria-label="Close chat" onClick={() => setOpen(false)}>
             ×
           </button>
@@ -143,17 +199,18 @@ export default function ProjectChat({ projectId, isOwner, initialUnread }: { pro
           {items.length === 0 && <p className="chatEmpty">No messages yet. Say hello to your team.</p>}
           {items.map((m, i) => {
             const prev = items[i - 1];
+            const mine = me !== null ? m.user === me : m.mine;
             const first = !prev || prev.user !== m.user || new Date(m.created_at).getTime() - new Date(prev.created_at).getTime() > 5 * 60000;
             return (
-              <div key={m.id} className={`chatMsg ${m.mine ? "mine" : ""} ${first ? "first" : ""}`}>
+              <div key={m.id} className={`chatMsg ${mine ? "mine" : ""} ${first ? "first" : ""}`}>
                 {first && (
                   <div className="chatMeta">
-                    <b>{m.mine ? "You" : m.name}</b> <span>{clock(m.created_at)}</span>
+                    <b>{mine ? "You" : m.name}</b> <span>{clock(m.created_at)}</span>
                   </div>
                 )}
                 <div className="chatBubble">
                   <span>{m.text}</span>
-                  {(m.mine || isOwner) && (
+                  {(mine || isOwner) && (
                     <button className="chatDel" aria-label="Delete message" title="Delete" onClick={() => remove(m)}>
                       ×
                     </button>
@@ -194,6 +251,19 @@ export default function ProjectChat({ projectId, isOwner, initialUnread }: { pro
           </button>
         </form>
       </aside>
+
+      <button className="chatFab" aria-label={unread ? `Chat, ${unread} new` : "Chat"} aria-expanded={open} title="Chat" onClick={() => setOpen((v) => !v)}>
+        {open ? (
+          <svg viewBox="0 0 20 20" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M5 8l5 5 5-5" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 20 20" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3.500 5.500a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-3.500 3v-3h0a2 2 0 0 1-2-2z" />
+          </svg>
+        )}
+        {!open && unread > 0 && <span className="toolBadge">{unread > 9 ? "9+" : unread}</span>}
+      </button>
     </>
   );
 }

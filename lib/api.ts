@@ -3,7 +3,7 @@ export type Subject = { id: number; name: string; position: number };
 export type Entry = { subject: number; date: string; text: string };
 export type AssignedTicket = { id: number; project: number; project_name: string; title: string; date: string; done: boolean };
 export type GridResponse = { subjects: Subject[]; hidden_subjects: Subject[]; entries: Entry[]; assigned: AssignedTicket[]; user: User };
-export type AppNotification = { id: number; kind: "invited" | "accepted" | "assigned" | "done" | "update" | "announcement"; title: string; body: string; link: string; created_at: string; read: boolean };
+export type AppNotification = { id: number; kind: "invited" | "accepted" | "assigned" | "done" | "message" | "update" | "announcement"; title: string; body: string; link: string; created_at: string; read: boolean };
 export type NotificationsResponse = { unread: number; items: AppNotification[] };
 export type DeleteResult = { result: "hidden" | "deleted" };
 
@@ -18,6 +18,8 @@ export type ProjectDetail = { project: ProjectSummary; members: Member[]; subjec
 export type InvitePreview = { project: string; email: string; invited_by: string | null; expired: boolean; accepted: boolean };
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+/** Address of a project's live chat connection, e.g. wss://api.example.com/ws/projects/3/chat */
+export const chatSocketUrl = (projectId: number) => `${API.replace(/^http/, "ws").replace(/\/api\/?$/, "")}/ws/projects/${projectId}/chat`;
 const TOKEN_KEY = "lodal.token";
 
 export class ApiError extends Error {

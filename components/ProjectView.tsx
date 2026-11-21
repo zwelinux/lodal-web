@@ -202,7 +202,6 @@ export default function ProjectView() {
         <section className="boardSection">
           <div className="boardTools">
             <div className="toolIcons">
-              <ProjectChat projectId={id} isOwner={project.is_owner} initialUnread={project.unread_chat ?? 0} />
               <AddSubjectButton onAdd={addSubject} />
               <HiddenButton groups={[{ label: "Hidden subjects", items: data.hidden_subjects, onRestore: restoreSubject, canRestore: project.is_owner }]} />
               {!phone && (
@@ -257,6 +256,8 @@ export default function ProjectView() {
         </section>
 
         {!isPro && <AdBanner />}
+
+        <ProjectChat projectId={id} me={me} isOwner={project.is_owner} initialUnread={project.unread_chat ?? 0} />
 
         {peopleOpen && (
           <div className="overlay" onClick={() => setPeopleOpen(false)}>
