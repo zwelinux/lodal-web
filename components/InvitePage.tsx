@@ -31,8 +31,8 @@ export default function InvitePage() {
   }
 
   const next = `/invite/${inviteToken}`;
-  const qs = preview ? `?next=${encodeURIComponent(next)}&email=${encodeURIComponent(preview.email)}` : "";
-  const wrongAccount = !!me && !!preview && me.email.toLowerCase() !== preview.email.toLowerCase();
+  const qs = preview ? `?next=${encodeURIComponent(next)}${preview.email ? `&email=${encodeURIComponent(preview.email)}` : ""}` : "";
+  const wrongAccount = !!me && !!preview && !preview.friend && me.email.toLowerCase() !== preview.email.toLowerCase();
 
   return (
     <main className="authPage">
@@ -55,7 +55,7 @@ export default function InvitePage() {
           <>
             <h1>Join “{preview.project}”</h1>
             <p className="fine">
-              {preview.invited_by ? <b>{preview.invited_by}</b> : "A friend"} invited <b>{preview.email}</b> to work on this project together.
+              {preview.invited_by ? <b>{preview.invited_by}</b> : "A friend"} invited {preview.friend ? "you" : <b>{preview.email}</b>} to work on this project together.
             </p>
             {preview.expired && <p className="error">This invitation has expired. Ask your friend to send a new one.</p>}
             {preview.accepted && !preview.expired && <p className="fine">This invitation was already used.</p>}

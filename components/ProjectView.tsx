@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { api, ApiError, token, type Invite, type Member, type ProjectDetail, type ProjectSubject, type ProjectTicket } from "@/lib/api";
+import { api, ApiError, token, type FriendsData, type Invite, type Member, type ProjectDetail, type ProjectSubject, type ProjectTicket } from "@/lib/api";
 import { addDays, dayNum, longDay, monthShort, rangeLabel, today, weekdayShort } from "@/lib/dates";
 import { useIsPhone } from "@/lib/useIsPhone";
 import DateNav from "./DateNav";
@@ -348,6 +348,11 @@ function People({ members, invites, isOwner, ownerId, projectId, me, onChange, o
   const [fresh, setFresh] = useState<(Invite & { email_sent?: boolean }) | null>(null);
   const [err, setErr] = useState("");
   const [copied, setCopied] = useState("");
+  const [friends, setFriends] = useState<FriendsData["friends"]>([]);
+
+  useEffect(() => {
+    if (isOwner) api.friends().then((f) => setFriends(f.friends)).catch(() => {});
+  }, [isOwner]);
 
   async function invite(e: React.FormEvent) {
     e.preventDefault();
@@ -427,6 +432,32 @@ function People({ members, invites, isOwner, ownerId, projectId, me, onChange, o
             </select>
             <button className="btn primary">Invite</button>
           </form>
+          {friends.filter((f) => !members.some((m) => m.user_id === f.user) && !invites.some((i) => i.friend === f.user)).length > 0 && (
+            <div className="pending">
+              <h3>Invite a friend</h3>
+              {friends
+                .filter((f) => !members.some((m) => m.user_id === f.user) && !invites.some((i) => i.friend === f.user))
+                .map((f) => (
+                  <div key={f.user} className="pendingRow">
+                    <span>{f.nickname}</span>
+                    <button
+                      className="btn"
+                      onClick={async () => {
+                        setErr("");
+                        try {
+                          await api.inviteFriend(projectId, f.user, role);
+                          onChange();
+                        } catch (x) {
+                          setErr(x instanceof Error ? x.message : "Could not invite.");
+                        }
+                      }}
+                    >
+                      Invite as {role}
+                    </button>
+                  </div>
+                ))}
+            </div>
+          )}
           <p className="fine">Members can see everything and can only change tickets given to them or made by them. Owners can change anything.</p>
           {err && <p className="error">{err}</p>}
           {fresh && (
@@ -455,13 +486,14 @@ function People({ members, invites, isOwner, ownerId, projectId, me, onChange, o
               <h3>Waiting to join</h3>
               {invites.map((i) => (
                 <div key={i.id} className="pendingRow">
-                  <span>{i.email}{i.role === "owner" && <small> owner</small>}</span>
+                  <span>{i.label}{i.role === "owner" && <small> owner</small>}</span>
+                  {!i.friend && (
                   <button
                     className="linkBtn"
                     onClick={async () => {
                       setErr("");
                       try {
-                        setFresh(await api.invite(projectId, i.email));
+                        setFresh(await api.invite(projectId, i.email, i.role));
                       } catch (x) {
                         setErr(x instanceof Error ? x.message : "Could not resend.");
                       }
@@ -469,9 +501,12 @@ function People({ members, invites, isOwner, ownerId, projectId, me, onChange, o
                   >
                     Resend email
                   </button>
-                  <button className="linkBtn" onClick={() => copy(i.link)}>
-                    {copied === i.link ? "Copied" : "Copy link"}
-                  </button>
+                  )}
+                  {!i.friend && (
+                    <button className="linkBtn" onClick={() => copy(i.link)}>
+                      {copied === i.link ? "Copied" : "Copy link"}
+                    </button>
+                  )}
                   <button
                     className="linkBtn"
                     onClick={async () => {

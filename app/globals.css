@@ -690,3 +690,17 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .dialog textarea { width: 100%; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--fg); padding: 10px 12px; font: inherit; resize: vertical; }
 .chatFlag { right: auto; left: -8px; }
 .chatMsg.mine .chatFlag { display: none; }
+
+/* Pulse: friends on top, cleaner profile card */
+.friendsTop { margin: 6px 0 4px; }
+.friendCount { color: var(--accent); font-weight: 500; margin-left: 6px; }
+.friendChips { display: flex; flex-wrap: wrap; gap: 8px; }
+.friendChip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 999px; padding: 4px 14px 4px 4px; cursor: pointer; font: inherit; }
+.friendChip:hover { border-color: var(--accent); }
+.friendChip .avatar { position: relative; }
+.onlineDot { position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; border-radius: 50%; background: #3ddc84; border: 2px solid var(--panel); }
+.profActions { display: flex; gap: 8px; flex-wrap: wrap; }
+.profFoot { margin: 4px 0 0; display: flex; gap: 14px; }
+.profFoot .linkBtn { color: var(--muted); font-size: 12px; }
+.mapCardPop { gap: 10px; }
+.profHead { padding-right: 24px; }

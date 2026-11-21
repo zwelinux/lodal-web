@@ -27,7 +27,6 @@ export default function PulseHome() {
   const [blocked, setBlocked] = useState<{ user: number; nickname: string }[]>([]);
   const [chatWith, setChatWith] = useState<{ user: number; nickname: string } | null>(null);
   const [report, setReport] = useState<{ user: number; nickname: string } | null>(null);
-  const [menu, setMenu] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -128,7 +127,7 @@ export default function PulseHome() {
   const at = sel ? scenePos(sel.slot) : null;
   const pos = at ? { left: `${at.x * 100}%`, top: `${at.y * 100}%` } : null;
   const side = at ? (at.x < 0.25 ? "left" : at.x > 0.75 ? "right" : "mid") : "mid"; // keep the card inside the city
-  const below = at ? at.y < 0.6 : false; // most windows: open the card underneath, there is more room
+  const below = at ? at.y < 0.5 : false; // windows in the upper half: open the card underneath, otherwise above
 
   return (
     <div className="app narrow">
@@ -136,6 +135,48 @@ export default function PulseHome() {
       <main className="projWrap pulsePage">
         <h1 className="pageTitle">Pulse</h1>
         <p className="pageSub">You are not alone. Right now, people are planning and working in this city of Lodal.</p>
+
+        {friends && (friends.incoming.length > 0 || friends.friends.length > 0) && (
+          <section className="friendsTop" aria-label="Friends">
+            {friends.incoming.length > 0 && (
+              <ul className="friendList">
+                {friends.incoming.map((r) => (
+                  <li key={r.id}>
+                    <span className="avatar" style={{ background: `hsl(${(r.user * 67) % 360} 55% 48%)` }} aria-hidden="true">
+                      {r.nickname.slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="friendName">{r.nickname} wants to be your friend</span>
+                    <button className="btn primary" onClick={() => answer(r.id, true)}>
+                      Accept
+                    </button>
+                    <button className="btn" onClick={() => answer(r.id, false)}>
+                      Decline
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {friends.friends.length > 0 && (
+              <>
+                <h2 className="pulseH">
+                  Friends <span className="friendCount">{friends.friends.filter((f) => f.active).length} online</span>
+                </h2>
+                <div className="friendChips">
+                  {friends.friends.map((f) => (
+                    <button key={f.user} className="friendChip" onClick={() => setChatWith({ user: f.user, nickname: f.nickname })} aria-label={`Message ${f.nickname}${f.active ? ", online" : ""}${f.unread ? `, ${f.unread} new` : ""}`}>
+                      <span className="avatar" style={{ background: `hsl(${(f.user * 67) % 360} 55% 48%)` }} aria-hidden="true">
+                        {f.nickname.slice(0, 1).toUpperCase()}
+                        {f.active && <i className="onlineDot" />}
+                      </span>
+                      <span className="friendName">{f.nickname}</span>
+                      {f.unread > 0 && <span className="friendBadge">{f.unread}</span>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
+        )}
 
         {error && (
           <p className="error" role="alert">
@@ -170,14 +211,12 @@ export default function PulseHome() {
                       <span className="status">{sel.last_seen ? `Was here ${ago(sel.last_seen)}` : "Away"}</span>
                     )}
                   </div>
-                  {!sel.mine && sel.user !== undefined && (
-                    <button className={`checkBtn ${sel.checked ? "on" : ""}`} disabled={sel.checked} onClick={() => checkPulse(sel.user as number)} title="Let them know you saw they are here">
-                      💓 {sel.checked ? "Checked" : "Check pulse"}
-                    </button>
-                  )}
                 </div>
                 {!sel.mine && sel.user !== undefined && (
                   <div className="profActions">
+                    <button className={`checkBtn ${sel.checked ? "on" : ""}`} disabled={sel.checked} onClick={() => checkPulse(sel.user as number)} title="Let them know you saw they are here">
+                      💓 {sel.checked ? "Checked" : "Check pulse"}
+                    </button>
                     {sel.relation === "friend" ? (
                       <button className="checkBtn on" onClick={() => setChatWith({ user: sel.user as number, nickname: sel.nickname as string })}>
                         💬 Message
@@ -188,28 +227,13 @@ export default function PulseHome() {
                       </button>
                     ) : sel.relation === "incoming" ? (
                       <button className="checkBtn on" onClick={() => addFriend(sel.user as number)}>
-                        🤝 Accept friend
+                        🤝 Accept
                       </button>
                     ) : (
                       <button className="checkBtn" onClick={() => addFriend(sel.user as number)}>
                         ➕ Add friend
                       </button>
                     )}
-                    <span className="menuWrap">
-                      <button className="checkBtn" aria-label="More" aria-expanded={menu} onClick={() => setMenu((v) => !v)}>
-                        ⋯
-                      </button>
-                      {menu && (
-                        <div className="menu" role="menu" onClick={() => setMenu(false)}>
-                          <button role="menuitem" onClick={() => setReport({ user: sel.user as number, nickname: sel.nickname as string })}>
-                            Report {sel.nickname}
-                          </button>
-                          <button role="menuitem" onClick={() => blockUser(sel.user as number, sel.nickname as string)}>
-                            Block
-                          </button>
-                        </div>
-                      )}
-                    </span>
                   </div>
                 )}
                 <h3 className="actTitle">Recent activity</h3>
@@ -232,6 +256,16 @@ export default function PulseHome() {
                   </ul>
                 ) : (
                   <p className="actEmpty">Nothing finished yet today.</p>
+                )}
+                {!sel.mine && sel.user !== undefined && (
+                  <p className="profFoot">
+                    <button className="linkBtn" onClick={() => setReport({ user: sel.user as number, nickname: sel.nickname as string })}>
+                      Report
+                    </button>
+                    <button className="linkBtn" onClick={() => blockUser(sel.user as number, sel.nickname as string)}>
+                      Block
+                    </button>
+                  </p>
                 )}
               </div>
             )}
@@ -270,63 +304,20 @@ export default function PulseHome() {
           </section>
         )}
 
-        {friends && (friends.incoming.length > 0 || friends.friends.length > 0 || blocked.length > 0) && (
-          <section className="friendsBox" aria-label="Friends">
-            {friends.incoming.length > 0 && (
-              <>
-                <h2 className="pulseH">Friend requests</h2>
-                <ul className="friendList">
-                  {friends.incoming.map((r) => (
-                    <li key={r.id}>
-                      <span className="avatar" style={{ background: `hsl(${(r.user * 67) % 360} 55% 48%)` }} aria-hidden="true">
-                        {r.nickname.slice(0, 1).toUpperCase()}
-                      </span>
-                      <span className="friendName">{r.nickname}</span>
-                      <button className="btn primary" onClick={() => answer(r.id, true)}>
-                        Accept
-                      </button>
-                      <button className="btn" onClick={() => answer(r.id, false)}>
-                        Decline
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {friends.friends.length > 0 && (
-              <>
-                <h2 className="pulseH">Friends</h2>
-                <ul className="friendList">
-                  {friends.friends.map((f) => (
-                    <li key={f.user}>
-                      <span className="avatar" style={{ background: `hsl(${(f.user * 67) % 360} 55% 48%)` }} aria-hidden="true">
-                        {f.nickname.slice(0, 1).toUpperCase()}
-                      </span>
-                      <span className="friendName">{f.nickname}</span>
-                      <button className="btn" onClick={() => setChatWith({ user: f.user, nickname: f.nickname })}>
-                        💬 Message{f.unread > 0 && <span className="friendBadge">{f.unread}</span>}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {blocked.length > 0 && (
-              <details className="blockedBox">
-                <summary>Blocked people ({blocked.length})</summary>
-                <ul className="friendList">
-                  {blocked.map((b) => (
-                    <li key={b.user}>
-                      <span className="friendName">{b.nickname}</span>
-                      <button className="btn" onClick={() => unblockUser(b.user)}>
-                        Unblock
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            )}
-          </section>
+        {blocked.length > 0 && (
+          <details className="blockedBox">
+            <summary>Blocked people ({blocked.length})</summary>
+            <ul className="friendList">
+              {blocked.map((b) => (
+                <li key={b.user}>
+                  <span className="friendName">{b.nickname}</span>
+                  <button className="btn" onClick={() => unblockUser(b.user)}>
+                    Unblock
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </main>
       {chatWith && <DirectChat key={chatWith.user} peer={chatWith} onClose={() => setChatWith(null)} onChanged={load} />}

@@ -8,10 +8,10 @@ export type NotificationsResponse = { unread: number; items: AppNotification[] }
 export type DeleteResult = { result: "hidden" | "deleted" };
 
 export type ProjectSummary = { id: number; name: string; owner: number; is_owner: boolean; role: "owner" | "member"; member_count: number; open_assigned_to_me: number; open_total: number; archived: boolean; unread_chat?: number };
-export type Member = { user_id: number; email: string; name: string; role: "owner" | "member" };
+export type Member = { user_id: number; name: string; role: "owner" | "member" };
 export type ProjectSubject = { id: number; name: string; position: number };
 export type ProjectTicket = { id: number; project: number; subject: number | null; title: string; date: string; assignee: number | null; done: boolean; created_by: number | null; can_edit: boolean };
-export type Invite = { id: number; email: string; role: "owner" | "member"; link: string; expires_at: string };
+export type Invite = { id: number; email: string; label: string; friend: number | null; role: "owner" | "member"; link: string; expires_at: string };
 export type PulseLight = {
   key: number;
   slot: number; // which window in the city
@@ -25,13 +25,13 @@ export type PulseLight = {
   events?: { id: number; created_at: string; claps: number; clapped: boolean }[];
 };
 export type PulseData = { total_users: number; active_now: number; windows: number; lights: PulseLight[]; me: { nickname: string; visible: boolean } };
-export type FriendsData = { friends: { user: number; nickname: string; unread: number }[]; incoming: { id: number; user: number; nickname: string }[]; unread: number };
+export type FriendsData = { friends: { user: number; nickname: string; unread: number; active: boolean }[]; incoming: { id: number; user: number; nickname: string }[]; unread: number };
 export type DirectMessage = { id: number; from: number; to: number; text: string; created_at: string; mine: boolean };
 export type ReportInput = { kind: "user" | "message" | "dm"; target: number; reason: "spam" | "harassment" | "inappropriate" | "other"; details?: string };
 export type ChatMessage = { id: number; user: number | null; name: string; text: string; created_at: string; mine: boolean };
 export type ChatPage = { items: ChatMessage[]; has_more: boolean };
 export type ProjectDetail = { project: ProjectSummary; members: Member[]; subjects: ProjectSubject[]; hidden_subjects: ProjectSubject[]; invites: Invite[]; tickets: ProjectTicket[] };
-export type InvitePreview = { project: string; email: string; invited_by: string | null; expired: boolean; accepted: boolean };
+export type InvitePreview = { project: string; email: string; friend: boolean; invited_by: string | null; expired: boolean; accepted: boolean };
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 /** Address of the live direct-message connection */
@@ -116,6 +116,7 @@ export const api = {
   deleteProject: (id: number) => call<DeleteResult>(`/projects/${id}`, { method: "DELETE" }),
   restoreProject: (id: number) => call<ProjectDetail>(`/projects/${id}`, { method: "PATCH", body: body({ archived: false }) }),
   invite: (id: number, email: string, role: "owner" | "member" = "member") => call<Invite & { email_sent: boolean }>(`/projects/${id}/invites`, { method: "POST", body: body({ email, role }) }),
+  inviteFriend: (id: number, friend: number, role: "owner" | "member" = "member") => call<Invite & { email_sent: boolean }>(`/projects/${id}/invites`, { method: "POST", body: body({ friend, role }) }),
   setRole: (id: number, userId: number, role: "owner" | "member") => call<Member>(`/projects/${id}/members/${userId}`, { method: "PATCH", body: body({ role }) }),
   revokeInvite: (id: number, inviteId: number) => call<void>(`/projects/${id}/invites/${inviteId}`, { method: "DELETE" }),
   removeMember: (id: number, userId: number) => call<void>(`/projects/${id}/members/${userId}`, { method: "DELETE" }),
