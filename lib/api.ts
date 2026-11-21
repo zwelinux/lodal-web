@@ -3,7 +3,7 @@ export type Subject = { id: number; name: string; position: number };
 export type Entry = { subject: number; date: string; text: string };
 export type AssignedTicket = { id: number; project: number; project_name: string; title: string; date: string; done: boolean };
 export type GridResponse = { subjects: Subject[]; hidden_subjects: Subject[]; entries: Entry[]; assigned: AssignedTicket[]; user: User };
-export type AppNotification = { id: number; kind: "invited" | "accepted" | "assigned" | "done" | "message" | "update" | "announcement"; title: string; body: string; link: string; created_at: string; read: boolean };
+export type AppNotification = { id: number; kind: "invited" | "accepted" | "assigned" | "done" | "message" | "clap" | "update" | "announcement"; title: string; body: string; link: string; created_at: string; read: boolean };
 export type NotificationsResponse = { unread: number; items: AppNotification[] };
 export type DeleteResult = { result: "hidden" | "deleted" };
 
@@ -12,6 +12,14 @@ export type Member = { user_id: number; email: string; name: string; role: "owne
 export type ProjectSubject = { id: number; name: string; position: number };
 export type ProjectTicket = { id: number; project: number; subject: number | null; title: string; date: string; assignee: number | null; done: boolean; created_by: number | null; can_edit: boolean };
 export type Invite = { id: number; email: string; role: "owner" | "member"; link: string; expires_at: string };
+export type PulseData = {
+  total_users: number;
+  active_now: number;
+  done_today: number;
+  online: { id: number; nickname: string }[];
+  feed: { id: number; user: number; nickname: string; created_at: string; claps: number; clapped: boolean; mine: boolean }[];
+  me: { nickname: string; visible: boolean };
+};
 export type ChatMessage = { id: number; user: number | null; name: string; text: string; created_at: string; mine: boolean };
 export type ChatPage = { items: ChatMessage[]; has_more: boolean };
 export type ProjectDetail = { project: ProjectSummary; members: Member[]; subjects: ProjectSubject[]; hidden_subjects: ProjectSubject[]; invites: Invite[]; tickets: ProjectTicket[] };
@@ -113,7 +121,14 @@ export const api = {
   addTicket: (id: number, t: { title: string; date: string; assignee: number | null; subject?: number | null }) =>
     call<ProjectTicket>(`/projects/${id}/tickets`, { method: "POST", body: body(t) }),
   updateTicket: (id: number, patch: Partial<Pick<ProjectTicket, "title" | "date" | "assignee" | "done" | "subject">>) =>
-    call<ProjectTicket>(`/tickets/${id}`, { method: "PATCH", body: body(patch) }),
+    call<ProjectTicket>(`/tickets/${id}`, { method: "PATCH", body: body(patch) }).then((t) => {
+      if (patch.done) void api.pulseDone();
+      return t;
+    }),
+  pulse: () => call<PulseData>("/pulse"),
+  pulseMe: (p: { nickname?: string; visible?: boolean }) => call<PulseData["me"]>("/pulse/me", { method: "PATCH", body: body(p) }),
+  pulseDone: () => call<{ ok: boolean }>("/pulse/done", { method: "POST" }).catch(() => ({ ok: false })),
+  pulseClap: (eventId: number) => call<{ claps: number; clapped: boolean }>(`/pulse/events/${eventId}/clap`, { method: "POST" }),
   deleteTicket: (id: number) => call<void>(`/tickets/${id}`, { method: "DELETE" }),
   invitePreview: (token: string) => call<InvitePreview>(`/invites/${token}`),
   acceptInvite: (token: string) => call<{ project: number }>(`/invites/${token}/accept`, { method: "POST" }),

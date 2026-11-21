@@ -1,4 +1,5 @@
 "use client";
+import { api } from "@/lib/api";
 import { useRef, useState } from "react";
 import { parseTasks, serializeTasks, TASK_MIME, type DragPayload, type Task } from "@/lib/tasks";
 import AutoTextarea from "./AutoTextarea";
@@ -16,7 +17,10 @@ export default function TaskList({ value, onChange, label, readOnly = false, dra
   const focusDraft = () => requestAnimationFrame(() => root.current?.querySelector<HTMLInputElement>("input.draft")?.focus());
 
   const edit = (i: number, text: string) => commit(tasks.map((t, j) => (j === i ? { ...t, text } : t)));
-  const toggle = (i: number) => commit(tasks.map((t, j) => (j === i ? { ...t, done: !t.done } : t)));
+  const toggle = (i: number) => {
+    if (!tasks[i].done) void api.pulseDone(); // tell Pulse someone finished a task (no text is sent)
+    commit(tasks.map((t, j) => (j === i ? { ...t, done: !t.done } : t)));
+  };
   const remove = (i: number) => commit(tasks.filter((_, j) => j !== i));
 
   function addDraft() {

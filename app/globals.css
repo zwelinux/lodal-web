@@ -600,3 +600,25 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .adLink img { display: block; width: 100%; height: auto; max-height: 120px; object-fit: contain; border-radius: var(--radius); }
 .adPlaceholder { width: 100%; max-width: 728px; height: 90px; display: grid; place-items: center; border: 1px dashed var(--line); border-radius: var(--radius); color: var(--muted); font-size: 13px; }
 .adTag { color: var(--muted); font-size: 11px; }
+
+/* pulse */
+.pulseStats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0; }
+.pulseStats .stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 4px; }
+.pulseStats b { font-size: 32px; line-height: 1.1; }
+.pulseStats span { color: var(--muted); font-size: 13px; }
+.pulseJoin { background: var(--accent-soft); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 20px; }
+.pulseJoin p { margin: 0 0 8px; }
+.pulseJoin p:last-child { margin: 0; }
+.pulseH { font-size: 14px; color: var(--muted); font-weight: 600; margin: 22px 0 10px; }
+.pulseOnline { display: flex; flex-wrap: wrap; gap: 8px; }
+.pulseFeed { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pulseFeed li { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; }
+.pulseText { flex: 1; min-width: 0; }
+.pulseText small { color: var(--muted); margin-left: 6px; }
+.clapBtn, .clapCount { border: 1px solid var(--line); background: var(--head); color: var(--fg); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+.clapBtn:hover:not(:disabled) { border-color: var(--accent); }
+.clapBtn.on { background: var(--accent-soft); border-color: var(--accent); cursor: default; }
+.clapCount { cursor: default; }
+.clapBtn.pop { animation: clapPop .5s ease; }
+@keyframes clapPop { 0% { transform: scale(1); } 40% { transform: scale(1.35) rotate(-8deg); } 100% { transform: scale(1); } }
+@media (max-width: 520px) { .pulseStats b { font-size: 24px; } .pulseStats .stat { padding: 12px; } }
