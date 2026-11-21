@@ -617,21 +617,40 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .mapCount b { font-size: 28px; line-height: 1; }
 .mapOf { color: var(--muted); }
 .mapWrap { position: relative; }
-.worldMap { display: block; width: 100%; height: auto; }
-.landDots { stroke: var(--muted); stroke-width: 2.4; stroke-linecap: round; fill: none; opacity: .38; }
-.light .core { fill: var(--accent); }
-.light.rest .core { fill: var(--muted); opacity: .6; }
-.light .ring { fill: none; stroke: var(--accent); stroke-width: 1.2; transform-box: fill-box; transform-origin: center; animation: lightPulse 2.4s ease-out infinite; animation-delay: inherit; }
-.light .hit { fill: transparent; cursor: pointer; }
-.light.me .core { stroke: var(--fg); stroke-width: 1.2; }
-.light.open .core { filter: drop-shadow(0 0 3px var(--accent)); }
-.light.sel .core { fill: var(--fg); }
-.light:focus, .light:focus-visible { outline: none; }
-.light:focus-visible .core { stroke: var(--fg); stroke-width: 1.5; }
-@keyframes lightPulse { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(4.2); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .light .ring { animation: none; opacity: .35; } }
+.cityScene { display: block; width: 100%; height: auto; border-radius: 12px; overflow: hidden; }
+.skyTop { stop-color: var(--skyTop, #0a1420); }
+.skyLow { stop-color: var(--skyLow, #1d2c3b); }
+.cityStar { fill: #fff; }
+.cityMoon { fill: #f3efe0; opacity: .9; }
+.cityBack { fill: var(--cityBack, #16222d); }
+.cityBody { fill: var(--cityBody, #0f1921); }
+.cityGround { fill: var(--cityGround, #0a1118); }
+.cityLine { stroke: var(--cityBody, #0f1921); stroke-width: 1.4; fill: none; }
+.winOff { fill: var(--winOff, #1d2a35); }
+.winOn { fill: #ffd166; }
+.win .pane { fill: #ffd166; }
+.win .glow { fill: #ffd166; opacity: .22; filter: blur(2.5px); }
+.win.rest .pane { opacity: .38; }
+.win.rest .glow { opacity: 0; }
+.win.open .glow { animation: windowGlow 3s ease-in-out infinite; animation-delay: inherit; opacity: .45; }
+.win.open .hit { fill: transparent; cursor: pointer; }
+.win.me .pane { stroke: #fff; stroke-width: 1.2; }
+.win.sel .pane { fill: #fff; }
+.win:focus, .win:focus-visible { outline: none; }
+.win:focus-visible .pane { stroke: #fff; stroke-width: 1.5; }
+@keyframes windowGlow { 0%, 100% { opacity: .25; } 50% { opacity: .75; } }
+@media (prefers-reduced-motion: reduce) { .win.open .glow { animation: none; } }
+:root:not([data-theme="dark"]) { --skyTop: #bcd9ea; --skyLow: #fbe3cf; --cityBack: #9db3bf; --cityBody: #5f7480; --cityGround: #4b5d67; --winOff: #8aa0ac; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --skyTop: #0a1420; --skyLow: #1d2c3b; --cityBack: #16222d; --cityBody: #0f1921; --cityGround: #0a1118; --winOff: #1d2a35; } }
+:root[data-theme="dark"] { --skyTop: #0a1420; --skyLow: #1d2c3b; --cityBack: #16222d; --cityBody: #0f1921; --cityGround: #0a1118; --winOff: #1d2a35; }
+:root:not([data-theme="dark"]) .cityStar, :root:not([data-theme="dark"]) .cityMoon { display: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cityStar, :root:not([data-theme="light"]) .cityMoon { display: inline; } }
 .mapCardPop { position: absolute; transform: translate(-50%, calc(-100% - 14px)); min-width: 190px; max-width: 260px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 32px rgba(0,0,0,.35); padding: 12px 14px; display: grid; gap: 6px; z-index: 3; }
-.mapCardPop.flip { transform: translate(-85%, calc(-100% - 14px)); }
+.mapCardPop.left { transform: translate(-14%, calc(-100% - 14px)); }
+.mapCardPop.right { transform: translate(-86%, calc(-100% - 14px)); }
+.mapCardPop.below { transform: translate(-50%, 16px); }
+.mapCardPop.below.left { transform: translate(-14%, 16px); }
+.mapCardPop.below.right { transform: translate(-86%, 16px); }
 .mapCardPop .x { position: absolute; top: 6px; right: 6px; }
 .mapCardPop .popLine small { color: var(--muted); margin-left: 4px; }
 .mapHint { margin: 8px 0 0; color: var(--muted); font-size: 12px; text-align: center; }

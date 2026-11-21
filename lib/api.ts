@@ -12,17 +12,16 @@ export type Member = { user_id: number; email: string; name: string; role: "owne
 export type ProjectSubject = { id: number; name: string; position: number };
 export type ProjectTicket = { id: number; project: number; subject: number | null; title: string; date: string; assignee: number | null; done: boolean; created_by: number | null; can_edit: boolean };
 export type Invite = { id: number; email: string; role: "owner" | "member"; link: string; expires_at: string };
-export type PulseDot = {
+export type PulseLight = {
   key: number;
-  lat: number;
-  lon: number;
+  slot: number; // which window in the city
   active: boolean;
   mine: boolean;
   user?: number; // only for people who switched themselves on
   nickname?: string;
   event?: { id: number; created_at: string; claps: number; clapped: boolean } | null;
 };
-export type PulseData = { total_users: number; active_now: number; dots: PulseDot[]; me: { nickname: string; visible: boolean } };
+export type PulseData = { total_users: number; active_now: number; windows: number; lights: PulseLight[]; me: { nickname: string; visible: boolean } };
 export type ChatMessage = { id: number; user: number | null; name: string; text: string; created_at: string; mine: boolean };
 export type ChatPage = { items: ChatMessage[]; has_more: boolean };
 export type ProjectDetail = { project: ProjectSummary; members: Member[]; subjects: ProjectSubject[]; hidden_subjects: ProjectSubject[]; invites: Invite[]; tickets: ProjectTicket[] };
@@ -59,14 +58,6 @@ export const token = {
   },
 };
 
-function deviceTimezone(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-  } catch {
-    return "";
-  }
-}
-
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const t = token.get();
   let res: Response;
@@ -75,7 +66,6 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...init,
       headers: {
         "Content-Type": "application/json",
-        "X-Timezone": deviceTimezone(), // lets Lodal put a light on the Pulse map (a region, never an address)
         ...(t ? { Authorization: `Token ${t}` } : {}),
       },
     });

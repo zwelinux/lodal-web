@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, token, type PulseData } from "@/lib/api";
 import SimpleBar from "./SimpleBar";
-import WorldMap, { mapPos } from "./WorldMap";
+import CityScene, { scenePos } from "./CityScene";
 
 function ago(iso: string): string {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
@@ -62,7 +62,7 @@ export default function PulseHome() {
   async function clap(eventId: number) {
     setPopped(true);
     setTimeout(() => setPopped(false), 600);
-    setData((d) => (d ? { ...d, dots: d.dots.map((p) => (p.event?.id === eventId && !p.event.clapped ? { ...p, event: { ...p.event, clapped: true, claps: p.event.claps + 1 } } : p)) } : d));
+    setData((d) => (d ? { ...d, lights: d.lights.map((p) => (p.event?.id === eventId && !p.event.clapped ? { ...p, event: { ...p.event, clapped: true, claps: p.event.claps + 1 } } : p)) } : d));
     try {
       await api.pulseClap(eventId);
     } catch (e) {
@@ -71,16 +71,18 @@ export default function PulseHome() {
     }
   }
 
-  const sel = data?.dots.find((d) => d.key === selected) ?? null;
-  const pos = sel ? { left: `${(mapPos.x(sel.lon) / mapPos.W) * 100}%`, top: `${(mapPos.y(sel.lat) / mapPos.H) * 100}%` } : null;
-  const flip = sel ? mapPos.x(sel.lon) / mapPos.W > 0.6 : false; // open the card towards the middle of the map
+  const sel = data?.lights.find((d) => d.slot === selected) ?? null;
+  const at = sel ? scenePos(sel.slot) : null;
+  const pos = at ? { left: `${at.x * 100}%`, top: `${at.y * 100}%` } : null;
+  const side = at ? (at.x < 0.25 ? "left" : at.x > 0.75 ? "right" : "mid") : "mid"; // keep the card inside the city
+  const below = at ? at.y < 0.4 : false; // windows near the top: open the card underneath
 
   return (
     <div className="app narrow">
       <SimpleBar />
       <main className="projWrap pulsePage">
         <h1 className="pageTitle">Pulse</h1>
-        <p className="pageSub">You are not alone. Right now, people around the world are planning too.</p>
+        <p className="pageSub">You are not alone. Right now, people are planning and working in this city of Lodal.</p>
 
         {error && (
           <p className="error" role="alert">
@@ -95,9 +97,9 @@ export default function PulseHome() {
             </p>
           </div>
           <div className="mapWrap">
-            {data && <WorldMap dots={data.dots} selected={selected} onSelect={setSelected} />}
+            {data && <CityScene lights={data.lights} selected={selected} onSelect={setSelected} />}
             {sel && pos && (
-              <div className={`mapCardPop ${flip ? "flip" : ""}`} style={pos} role="dialog" aria-label={sel.nickname}>
+              <div className={`mapCardPop ${side} ${below ? "below" : ""}`} style={pos} role="dialog" aria-label={sel.nickname}>
                 <button className="x show" aria-label="Close" onClick={() => setSelected(null)}>
                   ×
                 </button>
@@ -123,7 +125,7 @@ export default function PulseHome() {
               </div>
             )}
           </div>
-          <p className="mapHint">Each light is a person. Tap a named light to see what they did.</p>
+          <p className="mapHint">Each lit window is a person working right now. Tap a glowing window to see what they did.</p>
         </section>
 
         {data && (
@@ -138,7 +140,7 @@ export default function PulseHome() {
             ) : (
               <>
                 <p>
-                  <b>Want to be seen?</b> Pick a nickname (not your email or real name) and others can tap your light and cheer you on. Without one, you are an anonymous light. Your place on the map is only a region, from your device timezone.
+                  <b>Want to be seen?</b> Pick a nickname (not your email or real name) and others can tap your window and cheer you on. Without one, you are an anonymous lit window.
                 </p>
                 <form
                   className="inviteForm"
