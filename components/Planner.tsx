@@ -18,6 +18,8 @@ import ViewToggle from "./ViewToggle";
 import { countTasks, parseTasks, serializeTasks, TASK_MIME, type DragPayload } from "@/lib/tasks";
 import AutoTextarea from "./AutoTextarea";
 import TaskList from "./TaskList";
+import OverdueCard from "./OverdueCard";
+import { completeTask, findOverdue, planRollover, type OverdueItem } from "@/lib/overdue";
 
 const HIDE_DAY_KEY = "lodal.hideForDay";
 /** Subjects hidden for one day, kept on this device. Entries older than yesterday are dropped. */
@@ -116,7 +118,7 @@ function PlannerInner() {
 
   const load = useCallback(async () => {
     const ws = weekStart(dayRef.current);
-    const from = addDays(ws, -7);
+    const from = [addDays(ws, -7), addDays(today(), -14)].sort()[0]; // also the last 14 days, for the Overdue list
     const to = addDays(ws, 14);
     try {
       const g = await api.grid(from, to);
@@ -274,6 +276,26 @@ function PlannerInner() {
     }
   }
 
+  // Overdue: unfinished tasks from earlier days. Move them to today, or tick them done. Nothing moves by itself.
+  function rollOver(items: OverdueItem[]) {
+    const t0 = today();
+    const changes = planRollover(cells, items, t0);
+    for (const [k, v] of Object.entries(changes)) {
+      const [sid, date] = k.split("|");
+      setCell(Number(sid), date, v);
+    }
+    for (const it of items) {
+      if (it.kind !== "ticket") continue;
+      setAssigned((l) => l.map((a) => (a.id === it.id ? { ...a, date: t0 } : a)));
+      api.updateTicket(it.id, { date: t0 }).catch(() => load());
+    }
+  }
+  function finishOverdue(it: OverdueItem) {
+    if (it.kind === "ticket") return toggleTicket(it.id);
+    const k = key(it.sid, it.date);
+    setCell(it.sid, it.date, completeTask(cells[k] ?? "", it.i));
+  }
+
   // Save the order the person dragged the subjects into. Subjects hidden for the day keep their own place.
   function reorderSubjects(visibleOrder: number[]) {
     const full = subjects.map((x) => x.id);
@@ -427,6 +449,16 @@ function PlannerInner() {
       )}
 
       {!phone && view === "today" && <Hero day={day} subjects={shownSubjects} cells={cells} assigned={assigned} nav={dateNav} />}
+
+      {day === today() && (phone || view === "today") && (
+        <OverdueCard
+          items={findOverdue(cells, assigned, today())}
+          subjectName={(sid) => subjects.find((x) => x.id === sid)?.name ?? "Subject"}
+          onMove={(it) => rollOver([it])}
+          onDone={finishOverdue}
+          onMoveAll={() => rollOver(findOverdue(cells, assigned, today()))}
+        />
+      )}
 
       {phone ? (
         <DayView
