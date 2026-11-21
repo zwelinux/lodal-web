@@ -7,7 +7,9 @@ import { addDays, dayNum, longDay, monthShort, rangeLabel, today, weekdayShort }
 import { useIsPhone } from "@/lib/useIsPhone";
 import DateNav from "./DateNav";
 import AutoTextarea from "./AutoTextarea";
+import AdBanner from "./AdBanner";
 import ProjectBoard from "./ProjectBoard";
+import ProjectChat from "./ProjectChat";
 import SimpleBar from "./SimpleBar";
 import ViewToggle from "./ViewToggle";
 import { AddSubjectButton, HiddenButton } from "./ToolbarIcons";
@@ -28,6 +30,7 @@ export default function ProjectView() {
   const id = Number(params.id);
   const [data, setData] = useState<ProjectDetail | null>(null);
   const [me, setMe] = useState<number | null>(null);
+  const [isPro, setIsPro] = useState(true); // assume paid until we know, so free users never see a flash and paid users never do
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<"all" | "mine">("all");
   const [view, setView] = useState<"today" | "week">("today");
@@ -61,7 +64,7 @@ export default function ProjectView() {
       router.replace(`/login?next=/app/projects/${id}`);
       return;
     }
-    api.me().then((u) => setMe(u.id)).catch(() => {});
+    api.me().then((u) => (setMe(u.id), setIsPro(u.is_pro))).catch(() => {});
     const first = setTimeout(load, 0);
     const t = setInterval(load, 15000);
     const vis = () => document.visibilityState === "visible" && load();
@@ -206,6 +209,7 @@ export default function ProjectView() {
               </button>
             </div>
             <div className="toolIcons">
+              <ProjectChat projectId={id} isOwner={project.is_owner} initialUnread={project.unread_chat ?? 0} />
               <AddSubjectButton onAdd={addSubject} />
               <HiddenButton groups={[{ label: "Hidden subjects", items: data.hidden_subjects, onRestore: restoreSubject, canRestore: project.is_owner }]} />
               {!phone && (
@@ -258,6 +262,8 @@ export default function ProjectView() {
             onSubjectReorder={reorderSubjects}
           />
         </section>
+
+        {!isPro && <AdBanner />}
 
         {peopleOpen && (
           <div className="overlay" onClick={() => setPeopleOpen(false)}>

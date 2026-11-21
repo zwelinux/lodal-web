@@ -1,52 +1,22 @@
 "use client";
-import Script from "next/script";
-import { useEffect, useRef } from "react";
 
-const CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT; // e.g. ca-pub-1234567890123456
-const SLOT = process.env.NEXT_PUBLIC_ADSENSE_SLOT; // the ad unit id from AdSense
+const IMAGE = process.env.NEXT_PUBLIC_BANNER_IMAGE; // your own banner picture, e.g. /banner.png or https://...
+const LINK = process.env.NEXT_PUBLIC_BANNER_URL; // where a click goes
+const ALT = process.env.NEXT_PUBLIC_BANNER_ALT ?? "Advertisement";
 
-declare global {
-  interface Window {
-    adsbygoogle?: unknown[];
-  }
-}
-
-/** Google ad for free users. Renders nothing for Pro users, and a quiet placeholder while AdSense is not configured. */
-export default function AdBanner({ onUpgrade }: { onUpgrade: () => void }) {
-  const pushed = useRef(false);
-  useEffect(() => {
-    if (!CLIENT || !SLOT || pushed.current) return;
-    pushed.current = true;
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch {}
-  }, []);
-
+/** A simple banner you place yourself. Shown only at the bottom of a project, only for free users. */
+export default function AdBanner() {
   return (
     <aside className="ad" aria-label="Advertisement">
-      {CLIENT && SLOT ? (
-        <>
-          <Script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${CLIENT}`}
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
-          <ins
-            className="adsbygoogle"
-            style={{ display: "block" }}
-            data-ad-client={CLIENT}
-            data-ad-slot={SLOT}
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          />
-        </>
+      {IMAGE ? (
+        <a href={LINK || undefined} target="_blank" rel="noopener sponsored noreferrer" className="adLink">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={IMAGE} alt={ALT} />
+        </a>
       ) : (
-        process.env.NODE_ENV !== "production" && <div className="adPlaceholder">Ad space (set AdSense keys to show ads)</div>
+        <div className="adPlaceholder">Banner space</div>
       )}
-      <button className="linkBtn" onClick={onUpgrade}>
-        Remove ads for $1 a month
-      </button>
+      <small className="adTag">Advertisement</small>
     </aside>
   );
 }

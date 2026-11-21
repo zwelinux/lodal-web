@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, token, type AssignedTicket, type Subject, type User } from "@/lib/api";
 import { addDays, dayNum, toISO, longDay, monthShort, rangeLabel, today, weekdayShort, weekDays, weekStart } from "@/lib/dates";
@@ -8,7 +8,6 @@ import { useDismiss } from "@/lib/useDismiss";
 import { useSubjectDnd } from "@/lib/useSubjectDnd";
 import { useIsPhone } from "@/lib/useIsPhone";
 import { applyTheme, effectiveTheme, getTheme, type ThemeChoice } from "@/lib/theme";
-import AdBanner from "./AdBanner";
 import LogoMark from "./LogoMark";
 import NotificationBell from "./NotificationBell";
 import AppTabs from "./AppTabs";
@@ -53,7 +52,6 @@ export default function Planner() {
 
 function PlannerInner() {
   const router = useRouter();
-  const params = useSearchParams();
   const phone = useIsPhone();
 
   const [user, setUser] = useState<User | null>(null);
@@ -66,7 +64,6 @@ function PlannerInner() {
   const [loaded, setLoaded] = useState(false);
   const [sync, setSync] = useState<Sync>("saved");
   const [menu, setMenu] = useState(false);
-  const [upgrade, setUpgrade] = useState(false);
   useDismiss(menu, useCallback(() => setMenu(false), []));
   const [manage, setManage] = useState(false);
   const [theme, setTheme] = useState<ThemeChoice>(() => (typeof window === "undefined" ? "auto" : getTheme()));
@@ -77,7 +74,7 @@ function PlannerInner() {
     setSeen(effectiveTheme());
   };
   const [view, setView] = useState<"today" | "week">("today");
-  const [notice, setNotice] = useState(params.get("upgraded") ? "Thank you! Ads are now off." : "");
+  const [notice, setNotice] = useState("");
 
   // Follow the device clock: when midnight passes, "today" moves on by itself.
   const lastToday = useRef(today());
@@ -319,14 +316,6 @@ function PlannerInner() {
   const hideForDay = (id: number) => writeHideDay({ ...hideDay, [day]: [...(hideDay[day] ?? []), id] });
   const showForDay = (id: number) => writeHideDay({ ...hideDay, [day]: (hideDay[day] ?? []).filter((x) => x !== id) });
 
-  async function startUpgrade() {
-    try {
-      const { url } = await api.checkout();
-      window.location.href = url;
-    } catch (e) {
-      if (!bail(e)) setNotice(e instanceof Error ? e.message : "Could not start payment.");
-    }
-  }
   async function logout() {
     try {
       await api.logout();
@@ -416,17 +405,7 @@ function PlannerInner() {
                 >
                   Manage subscription
                 </button>
-              ) : (
-                <button
-                  role="menuitem"
-                  onClick={() => {
-                    setMenu(false);
-                    setUpgrade(true);
-                  }}
-                >
-                  Remove ads · $1/month
-                </button>
-              )}
+              ) : null}
               <button role="menuitem" onClick={logout}>
                 Log out
               </button>
@@ -506,25 +485,6 @@ function PlannerInner() {
         />
       )}
 
-      {user && !user.is_pro && <AdBanner onUpgrade={() => setUpgrade(true)} />}
-
-      {upgrade && (
-        <div className="overlay" onClick={() => setUpgrade(false)}>
-          <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="upTitle" onClick={(e) => e.stopPropagation()}>
-            <h2 id="upTitle">Lodal without ads</h2>
-            <p className="price">
-              $1<span> / month</span>
-            </p>
-            <p>Lodal stays free. If the ads bother you, pay one dollar a month and they disappear. Cancel any time.</p>
-            <button className="btn primary big" onClick={startUpgrade}>
-              Remove ads
-            </button>
-            <button className="btn" onClick={() => setUpgrade(false)}>
-              Not now
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

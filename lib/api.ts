@@ -7,11 +7,13 @@ export type AppNotification = { id: number; kind: "invited" | "accepted" | "assi
 export type NotificationsResponse = { unread: number; items: AppNotification[] };
 export type DeleteResult = { result: "hidden" | "deleted" };
 
-export type ProjectSummary = { id: number; name: string; owner: number; is_owner: boolean; role: "owner" | "member"; member_count: number; open_assigned_to_me: number; open_total: number; archived: boolean };
+export type ProjectSummary = { id: number; name: string; owner: number; is_owner: boolean; role: "owner" | "member"; member_count: number; open_assigned_to_me: number; open_total: number; archived: boolean; unread_chat?: number };
 export type Member = { user_id: number; email: string; name: string; role: "owner" | "member" };
 export type ProjectSubject = { id: number; name: string; position: number };
 export type ProjectTicket = { id: number; project: number; subject: number | null; title: string; date: string; assignee: number | null; done: boolean; created_by: number | null; can_edit: boolean };
 export type Invite = { id: number; email: string; role: "owner" | "member"; link: string; expires_at: string };
+export type ChatMessage = { id: number; user: number | null; name: string; text: string; created_at: string; mine: boolean };
+export type ChatPage = { items: ChatMessage[]; has_more: boolean };
 export type ProjectDetail = { project: ProjectSummary; members: Member[]; subjects: ProjectSubject[]; hidden_subjects: ProjectSubject[]; invites: Invite[]; tickets: ProjectTicket[] };
 export type InvitePreview = { project: string; email: string; invited_by: string | null; expired: boolean; accepted: boolean };
 
@@ -97,6 +99,11 @@ export const api = {
   setRole: (id: number, userId: number, role: "owner" | "member") => call<Member>(`/projects/${id}/members/${userId}`, { method: "PATCH", body: body({ role }) }),
   revokeInvite: (id: number, inviteId: number) => call<void>(`/projects/${id}/invites/${inviteId}`, { method: "DELETE" }),
   removeMember: (id: number, userId: number) => call<void>(`/projects/${id}/members/${userId}`, { method: "DELETE" }),
+  messages: (id: number, q: { after?: number; before?: number } = {}) =>
+    call<ChatPage>(`/projects/${id}/messages${q.after ? `?after=${q.after}` : q.before ? `?before=${q.before}` : ""}`),
+  sendMessage: (id: number, text: string) => call<ChatMessage>(`/projects/${id}/messages`, { method: "POST", body: body({ text }) }),
+  readMessages: (id: number) => call<{ unread: number }>(`/projects/${id}/messages/read`, { method: "POST" }),
+  deleteMessage: (id: number) => call<void>(`/messages/${id}`, { method: "DELETE" }),
   addProjectSubject: (id: number, name: string) => call<ProjectSubject>(`/projects/${id}/subjects`, { method: "POST", body: body({ name }) }),
   renameProjectSubject: (id: number, name: string) => call<ProjectSubject>(`/project-subjects/${id}`, { method: "PATCH", body: body({ name }) }),
   deleteProjectSubject: (id: number) => call<DeleteResult>(`/project-subjects/${id}`, { method: "DELETE" }),
