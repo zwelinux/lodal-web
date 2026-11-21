@@ -13,6 +13,7 @@ export default function ProjectsHome() {
   const [list, setList] = useState<ProjectSummary[] | null>(null);
   const [hidden, setHidden] = useState<ProjectSummary[]>([]);
   const [showNote, setShowNote] = useState(true);
+  const [msg, setMsg] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
 
@@ -32,6 +33,18 @@ export default function ProjectsHome() {
         } else setError(e.message);
       });
   }, [router]);
+
+  async function removeProject(p: ProjectSummary) {
+    if (!confirm(`Delete "${p.name}"?\n\nIf it has no tickets it is deleted. If it has tickets, it is only hidden for everyone and nothing is lost. You can bring it back from "Hidden projects".`)) return;
+    try {
+      const r = await api.deleteProject(p.id);
+      setList((l) => (l ? l.filter((x) => x.id !== p.id) : l));
+      if (r.result === "hidden") setHidden((h) => [...h, { ...p, archived: true }]);
+      setMsg(r.result === "hidden" ? `Hidden "${p.name}". Everything in it is kept. Bring it back from "Hidden projects" below.` : `Deleted "${p.name}".`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not delete the project.");
+    }
+  }
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -55,7 +68,15 @@ export default function ProjectsHome() {
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New project, e.g. Video Content Creation" aria-label="Project name" maxLength={120} />
           <button className="btn primary">Create project</button>
         </form>
-        {note && showNote && (
+        {msg && (
+          <div className="notice" role="status">
+            {msg}
+            <button className="iconBtn" aria-label="Dismiss" onClick={() => setMsg("")}>
+              ×
+            </button>
+          </div>
+        )}
+        {note && showNote && !msg && (
           <div className="notice" role="status">
             {note === "hidden" ? "Hidden. Everything in it is kept. Bring it back from “Hidden projects” below." : "Deleted."}
             <button className="iconBtn" aria-label="Dismiss" onClick={() => setShowNote(false)}>
@@ -78,7 +99,8 @@ export default function ProjectsHome() {
         )}
         <div className="projGrid">
           {list?.map((p) => (
-            <Link key={p.id} href={`/app/projects/${p.id}`} className="projCard">
+            <div key={p.id} className="projCardWrap">
+            <Link href={`/app/projects/${p.id}`} className="projCard">
               <b>{p.name}</b>
               <span>
                 {p.member_count} {p.member_count === 1 ? "person" : "people"} · {p.open_total} open
@@ -86,6 +108,12 @@ export default function ProjectsHome() {
               {p.open_assigned_to_me > 0 && <em>{p.open_assigned_to_me} assigned to you</em>}
               {p.is_owner && <small>You own this</small>}
             </Link>
+            {p.is_owner && (
+              <button className="x cardDelete" aria-label={`Delete ${p.name}`} title="Delete" onClick={() => removeProject(p)}>
+                ×
+              </button>
+            )}
+            </div>
           ))}
         </div>
         <HiddenList

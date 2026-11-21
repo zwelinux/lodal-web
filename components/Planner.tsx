@@ -10,6 +10,7 @@ import { useIsPhone } from "@/lib/useIsPhone";
 import { applyTheme, effectiveTheme, getTheme, type ThemeChoice } from "@/lib/theme";
 import AdBanner from "./AdBanner";
 import LogoMark from "./LogoMark";
+import NotificationBell from "./NotificationBell";
 import AppTabs from "./AppTabs";
 import DateNav from "./DateNav";
 import HiddenList from "./HiddenList";
@@ -348,9 +349,12 @@ function PlannerInner() {
         </span>
         <AppTabs />
         <span className="grow" />
-        <span className={`sync ${sync}`} role="status">
-          {sync === "saved" ? "Saved" : sync === "saving" ? "Saving…" : "Offline, will retry"}
-        </span>
+        {sync === "offline" && (
+          <span className="sync offline" role="status">
+            Offline, will retry
+          </span>
+        )}
+        <NotificationBell />
         <button
           className="iconBtn themeBtn"
           aria-label={seen === "dark" ? "Switch to light mode" : "Switch to dark mode"}

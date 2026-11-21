@@ -501,3 +501,30 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .gSubj .x { position: absolute; right: 2px; top: 10px; width: 26px; height: 26px; margin: 0; background: var(--bg); border-radius: 8px; z-index: 1; }
 .gSubj .hideBtn { right: 30px; }
 .subjGrip { width: 14px; margin-left: -6px; }
+
+/* notification bell */
+.bellWrap { position: relative; }
+.bellBtn { position: relative; color: var(--fg); }
+.bellBadge { position: absolute; top: 2px; right: 0; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: var(--accent); color: var(--accent-fg); font-size: 10.5px; font-weight: 700; line-height: 17px; text-align: center; }
+.notifPanel { position: absolute; right: 0; top: 46px; z-index: 30; width: min(380px, calc(100vw - 24px)); max-height: min(70vh, 520px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 12px 40px rgba(0, 0, 0, .22); padding: 8px; }
+.notifHead { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px 10px; }
+.notifHead b { font-size: 15px; }
+.notifHead .linkBtn { color: var(--accent); text-decoration: none; font-size: 13px; }
+.notifPanel ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.notifItem { width: 100%; display: flex; gap: 12px; align-items: flex-start; text-align: left; border: 0; background: none; padding: 10px; border-radius: 12px; cursor: pointer; }
+.notifItem:hover { background: var(--head); }
+.notifItem.unread { background: var(--accent-soft); }
+.notifIcon { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--head); color: var(--accent); font-size: 14px; font-weight: 700; }
+.notifText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.notifText b { font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+.notifText span { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.notifText small { font-size: 12px; color: var(--muted); }
+.notifDot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 6px; }
+.notifEmpty { color: var(--muted); font-size: 14px; padding: 14px 10px 16px; margin: 0; }
+
+/* delete on the project cards */
+.projCardWrap { position: relative; display: flex; }
+.projCardWrap .projCard { flex: 1; min-width: 0; }
+.cardDelete { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; margin: 0; opacity: 0; background: var(--bg); border-radius: 8px; }
+.projCardWrap:hover .cardDelete, .cardDelete:focus-visible { opacity: 1; }
+@media (hover: none) { .cardDelete { opacity: .6; } }

@@ -6,6 +6,7 @@ import { applyTheme, effectiveTheme, getTheme, type ThemeChoice } from "@/lib/th
 import { useDismiss } from "@/lib/useDismiss";
 import AppTabs from "./AppTabs";
 import LogoMark from "./LogoMark";
+import NotificationBell from "./NotificationBell";
 
 /** Top bar for the Projects pages. Same controls as the personal planner: tabs, theme switch and account menu. */
 export default function SimpleBar() {
@@ -50,6 +51,7 @@ export default function SimpleBar() {
       </span>
       <AppTabs />
       <span className="grow" />
+      <NotificationBell />
       <button
         className="iconBtn themeBtn"
         suppressHydrationWarning

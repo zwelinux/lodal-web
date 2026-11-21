@@ -3,6 +3,8 @@ export type Subject = { id: number; name: string; position: number };
 export type Entry = { subject: number; date: string; text: string };
 export type AssignedTicket = { id: number; project: number; project_name: string; title: string; date: string; done: boolean };
 export type GridResponse = { subjects: Subject[]; hidden_subjects: Subject[]; entries: Entry[]; assigned: AssignedTicket[]; user: User };
+export type AppNotification = { id: number; kind: "invited" | "accepted" | "update" | "announcement"; title: string; body: string; link: string; created_at: string; read: boolean };
+export type NotificationsResponse = { unread: number; items: AppNotification[] };
 export type DeleteResult = { result: "hidden" | "deleted" };
 
 export type ProjectSummary = { id: number; name: string; owner: number; is_owner: boolean; member_count: number; open_assigned_to_me: number; open_total: number; archived: boolean };
@@ -83,6 +85,8 @@ export const api = {
   saveCell: (subject: number, date: string, text: string) =>
     call<Entry>("/entries", { method: "PUT", body: body({ subject, date, text }) }),
   me: () => call<User>("/me"),
+  notifications: () => call<NotificationsResponse>("/notifications"),
+  markRead: (arg: { ids: number[] } | { all: true }) => call<{ unread: number }>("/notifications/read", { method: "POST", body: body(arg) }),
   projects: (hidden = false) => call<ProjectSummary[]>(`/projects${hidden ? "?hidden=1" : ""}`),
   createProject: (name: string) => call<ProjectSummary>("/projects", { method: "POST", body: body({ name }) }),
   project: (id: number) => call<ProjectDetail>(`/projects/${id}`),
