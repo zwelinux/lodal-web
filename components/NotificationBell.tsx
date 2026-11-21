@@ -13,7 +13,7 @@ function ago(iso: string): string {
   return new Date(iso).toLocaleDateString("en", { day: "numeric", month: "short" });
 }
 
-const ICON: Record<AppNotification["kind"], string> = { invited: "✉", accepted: "✓", update: "↑", announcement: "★" };
+const ICON: Record<AppNotification["kind"], string> = { invited: "✉", accepted: "✓", assigned: "@", done: "✓", update: "↑", announcement: "★" };
 
 /** The bell in the top bar: invitations, people joining, and news from Lodal. */
 export default function NotificationBell() {

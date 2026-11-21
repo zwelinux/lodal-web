@@ -3,15 +3,15 @@ export type Subject = { id: number; name: string; position: number };
 export type Entry = { subject: number; date: string; text: string };
 export type AssignedTicket = { id: number; project: number; project_name: string; title: string; date: string; done: boolean };
 export type GridResponse = { subjects: Subject[]; hidden_subjects: Subject[]; entries: Entry[]; assigned: AssignedTicket[]; user: User };
-export type AppNotification = { id: number; kind: "invited" | "accepted" | "update" | "announcement"; title: string; body: string; link: string; created_at: string; read: boolean };
+export type AppNotification = { id: number; kind: "invited" | "accepted" | "assigned" | "done" | "update" | "announcement"; title: string; body: string; link: string; created_at: string; read: boolean };
 export type NotificationsResponse = { unread: number; items: AppNotification[] };
 export type DeleteResult = { result: "hidden" | "deleted" };
 
-export type ProjectSummary = { id: number; name: string; owner: number; is_owner: boolean; member_count: number; open_assigned_to_me: number; open_total: number; archived: boolean };
+export type ProjectSummary = { id: number; name: string; owner: number; is_owner: boolean; role: "owner" | "member"; member_count: number; open_assigned_to_me: number; open_total: number; archived: boolean };
 export type Member = { user_id: number; email: string; name: string; role: "owner" | "member" };
 export type ProjectSubject = { id: number; name: string; position: number };
-export type ProjectTicket = { id: number; project: number; subject: number | null; title: string; date: string; assignee: number | null; done: boolean };
-export type Invite = { id: number; email: string; link: string; expires_at: string };
+export type ProjectTicket = { id: number; project: number; subject: number | null; title: string; date: string; assignee: number | null; done: boolean; created_by: number | null; can_edit: boolean };
+export type Invite = { id: number; email: string; role: "owner" | "member"; link: string; expires_at: string };
 export type ProjectDetail = { project: ProjectSummary; members: Member[]; subjects: ProjectSubject[]; hidden_subjects: ProjectSubject[]; invites: Invite[]; tickets: ProjectTicket[] };
 export type InvitePreview = { project: string; email: string; invited_by: string | null; expired: boolean; accepted: boolean };
 
@@ -93,7 +93,8 @@ export const api = {
   renameProject: (id: number, name: string) => call<ProjectDetail>(`/projects/${id}`, { method: "PATCH", body: body({ name }) }),
   deleteProject: (id: number) => call<DeleteResult>(`/projects/${id}`, { method: "DELETE" }),
   restoreProject: (id: number) => call<ProjectDetail>(`/projects/${id}`, { method: "PATCH", body: body({ archived: false }) }),
-  invite: (id: number, email: string) => call<Invite & { email_sent: boolean }>(`/projects/${id}/invites`, { method: "POST", body: body({ email }) }),
+  invite: (id: number, email: string, role: "owner" | "member" = "member") => call<Invite & { email_sent: boolean }>(`/projects/${id}/invites`, { method: "POST", body: body({ email, role }) }),
+  setRole: (id: number, userId: number, role: "owner" | "member") => call<Member>(`/projects/${id}/members/${userId}`, { method: "PATCH", body: body({ role }) }),
   revokeInvite: (id: number, inviteId: number) => call<void>(`/projects/${id}/invites/${inviteId}`, { method: "DELETE" }),
   removeMember: (id: number, userId: number) => call<void>(`/projects/${id}/members/${userId}`, { method: "DELETE" }),
   addProjectSubject: (id: number, name: string) => call<ProjectSubject>(`/projects/${id}/subjects`, { method: "POST", body: body({ name }) }),

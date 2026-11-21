@@ -5,7 +5,6 @@ import { addDays, dayNum, monthShort, today, weekdayShort } from "@/lib/dates";
 import { useSubjectDnd } from "@/lib/useSubjectDnd";
 import { useIsPhone } from "@/lib/useIsPhone";
 import AutoTextarea from "./AutoTextarea";
-import HiddenList from "./HiddenList";
 
 const TICKET_MIME = "application/x-lodal-ticket";
 const hue = (id: number) => `hsl(${(id * 67 + 140) % 360} 50% 52%)`;
@@ -57,7 +56,7 @@ export default function ProjectBoard(p: Props) {
       onAdd={(title) => p.onAdd({ title, date: d, subject: s.id, assignee: p.me })}
       onDropTicket={(id) => {
         const tk = tickets.find((x) => x.id === id);
-        if (tk && (tk.date !== d || (tk.subject ?? firstSubject) !== s.id)) p.onUpdate(tk, { date: d, subject: s.id });
+        if (tk && tk.can_edit && (tk.date !== d || (tk.subject ?? firstSubject) !== s.id)) p.onUpdate(tk, { date: d, subject: s.id });
       }}
     />
   );
@@ -71,8 +70,6 @@ export default function ProjectBoard(p: Props) {
             {cell(s, day)}
           </section>
         ))}
-        <AddSubject onAdd={p.onSubjectAdd} />
-        <HiddenList label="Hidden subjects" items={p.data.hidden_subjects} canRestore={isOwner} onRestore={p.onSubjectRestore} />
       </div>
     );
 
@@ -115,8 +112,6 @@ export default function ProjectBoard(p: Props) {
           </div>
         ))}
       </div>
-      <AddSubject onAdd={p.onSubjectAdd} />
-      <HiddenList label="Hidden subjects" items={p.data.hidden_subjects} canRestore={isOwner} onRestore={p.onSubjectRestore} />
     </div>
   );
 }
@@ -132,34 +127,6 @@ function SubjName({ s, onRename }: { s: ProjectSubject; onRename: (id: number, n
       onBlur={() => (v.trim() ? v.trim() !== s.name && onRename(s.id, v.trim()) : setV(s.name))}
       onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), e.currentTarget.blur())}
     />
-  );
-}
-
-function AddSubject({ onAdd }: { onAdd: (name: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  if (!open)
-    return (
-      <button className="btn addSubject" onClick={() => setOpen(true)}>
-        + Add subject
-      </button>
-    );
-  return (
-    <form
-      className="addForm"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (name.trim()) onAdd(name.trim());
-        setName("");
-        setOpen(false);
-      }}
-    >
-      <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Subject name, e.g. Editing" aria-label="Subject name" maxLength={120} />
-      <button className="btn primary">Add</button>
-      <button type="button" className="btn" onClick={() => setOpen(false)}>
-        Cancel
-      </button>
-    </form>
   );
 }
 
@@ -251,14 +218,17 @@ function TicketCell({
 function TicketItem({ t, who, members, past, label, onUpdate, onDelete }: { t: ProjectTicket; who?: Member; members: Member[]; me: number | null; past: boolean; label: string; onUpdate: (t: ProjectTicket, patch: Patch) => void; onDelete: (t: ProjectTicket) => void }) {
   const [title, setTitle] = useState(t.title);
   const [dragging, setDragging] = useState(false);
+  const locked = !t.can_edit; // a member can only change tickets given to them or made by them
   return (
-    <div className={`task ticketTask ${t.done ? "done" : ""} ${!t.done ? "hasGrip" : ""} ${dragging ? "dragging" : ""}`}>
+    <div className={`task ticketTask ${locked ? "locked" : ""} ${t.done ? "done" : ""} ${!t.done ? "hasGrip" : ""} ${dragging ? "dragging" : ""}`}>
       <button
         type="button"
         role="checkbox"
         aria-checked={t.done}
         aria-label={t.done ? "Mark as not done" : "Mark as done"}
         className="tick"
+        disabled={locked}
+        title={locked ? "Only the person it is given to, or an owner, can tick this" : undefined}
         onClick={() => onUpdate(t, { done: !t.done })}
       >
         <span>
@@ -269,7 +239,7 @@ function TicketItem({ t, who, members, past, label, onUpdate, onDelete }: { t: P
           )}
         </span>
       </button>
-      {!t.done && (
+      {!t.done && !locked && (
         <span
           className="grip"
           draggable
@@ -289,12 +259,12 @@ function TicketItem({ t, who, members, past, label, onUpdate, onDelete }: { t: P
       )}
       <AutoTextarea
         value={title}
-        readOnly={past}
+        readOnly={past || locked}
         aria-label={`${label}, ticket`}
         onChange={(e) => setTitle(e.target.value.replace(/\n/g, " "))}
-        onBlur={() => !past && (title.trim() ? title.trim() !== t.title && onUpdate(t, { title: title.trim() }) : onDelete(t))}
+        onBlur={() => !past && !locked && (title.trim() ? title.trim() !== t.title && onUpdate(t, { title: title.trim() }) : onDelete(t))}
         onKeyDown={(e) => {
-          if (past) return;
+          if (past || locked) return;
           if (e.key === "Enter") {
             e.preventDefault();
             e.currentTarget.blur();
@@ -314,7 +284,7 @@ function TicketItem({ t, who, members, past, label, onUpdate, onDelete }: { t: P
             +
           </span>
         )}
-        <select value={t.assignee ?? ""} disabled={past} aria-label="Assigned to" onChange={(e) => onUpdate(t, { assignee: e.target.value ? Number(e.target.value) : null })}>
+        <select value={t.assignee ?? ""} disabled={past || locked} aria-label="Assigned to" onChange={(e) => onUpdate(t, { assignee: e.target.value ? Number(e.target.value) : null })}>
           <option value="">Nobody yet</option>
           {members.map((m) => (
             <option key={m.user_id} value={m.user_id}>
@@ -323,7 +293,7 @@ function TicketItem({ t, who, members, past, label, onUpdate, onDelete }: { t: P
           ))}
         </select>
       </label>
-      {!past && (
+      {!past && !locked && (
         <button className="x" aria-label="Delete ticket" onClick={() => onDelete(t)}>
           ×
         </button>

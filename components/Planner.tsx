@@ -15,6 +15,7 @@ import AppTabs from "./AppTabs";
 import DateNav from "./DateNav";
 import HiddenList from "./HiddenList";
 import ViewToggle from "./ViewToggle";
+import { AddSubjectButton, HiddenButton } from "./ToolbarIcons";
 import { countTasks, parseTasks, serializeTasks, TASK_MIME, type DragPayload } from "@/lib/tasks";
 import AutoTextarea from "./AutoTextarea";
 import TaskList from "./TaskList";
@@ -592,6 +593,13 @@ function WeekGrid({ days, view, setView, moveTask, assigned, toggleTicket, hidde
   return (
     <main className={`gridWrap ${view === "today" ? "oneDay" : ""}`}>
       <div className="gridTools">
+        <AddSubjectButton onAdd={addSubject} />
+        <HiddenButton
+          groups={[
+            ...(hideForDay ? [{ label: dayIsToday ? "Hidden for today" : "Hidden for this day", items: hiddenToday, onRestore: showForDay }] : []),
+            { label: "Hidden subjects", items: hiddenSubjects, onRestore: restoreSubject },
+          ]}
+        />
         <ViewToggle expanded={view === "week"} onClick={() => setView(view === "today" ? "week" : "today")} />
       </div>
       <div className="weekGrid" style={{ "--n": days.length } as React.CSSProperties}>
@@ -651,10 +659,7 @@ function WeekGrid({ days, view, setView, moveTask, assigned, toggleTicket, hidde
           </div>
         ))}
       </div>
-      {subjects.length === 0 && assigned.length === 0 && <p className="empty">Add your first subject to begin, for example “Work” or “Family”.</p>}
-      <AddSubject onAdd={addSubject} />
-      <HiddenList label="Hidden subjects" items={hiddenSubjects} onRestore={restoreSubject} />
-      {hideForDay && <HiddenList label={dayIsToday ? "Hidden for today" : "Hidden for this day"} items={hiddenToday} onRestore={showForDay} />}
+      {subjects.length === 0 && assigned.length === 0 && hiddenToday.length === 0 && <p className="empty">Press the + button above to add your first subject, for example “Work” or “Family”.</p>}
     </main>
   );
 }

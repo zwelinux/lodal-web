@@ -10,6 +10,7 @@ import AutoTextarea from "./AutoTextarea";
 import ProjectBoard from "./ProjectBoard";
 import SimpleBar from "./SimpleBar";
 import ViewToggle from "./ViewToggle";
+import { AddSubjectButton, HiddenButton } from "./ToolbarIcons";
 
 const hue = (id: number) => `hsl(${(id * 67 + 140) % 360} 50% 52%)`;
 
@@ -204,15 +205,19 @@ export default function ProjectView() {
                 Mine
               </button>
             </div>
-            {!phone && (
-              <ViewToggle
-                expanded={view === "week"}
-                onClick={() => {
-                  setView(view === "today" ? "week" : "today");
-                  setDay(today());
-                }}
-              />
-            )}
+            <div className="toolIcons">
+              <AddSubjectButton onAdd={addSubject} />
+              <HiddenButton groups={[{ label: "Hidden subjects", items: data.hidden_subjects, onRestore: restoreSubject, canRestore: project.is_owner }]} />
+              {!phone && (
+                <ViewToggle
+                  expanded={view === "week"}
+                  onClick={() => {
+                    setView(view === "today" ? "week" : "today");
+                    setDay(today());
+                  }}
+                />
+              )}
+            </div>
           </div>
           {project.archived && (
             <div className="notice" role="status">
@@ -263,7 +268,7 @@ export default function ProjectView() {
                   ×
                 </button>
               </div>
-              <People members={members} invites={invites} isOwner={project.is_owner} projectId={id} me={me} onChange={load} onLeft={() => router.replace("/app/projects")} />
+              <People members={members} invites={invites} isOwner={project.is_owner} ownerId={project.owner} projectId={id} me={me} onChange={load} onLeft={() => router.replace("/app/projects")} />
             </div>
           </div>
         )}
@@ -337,8 +342,9 @@ function ProjectName({ project, onRename }: { project: ProjectDetail["project"];
   );
 }
 
-function People({ members, invites, isOwner, projectId, me, onChange, onLeft }: { members: Member[]; invites: Invite[]; isOwner: boolean; projectId: number; me: number | null; onChange: () => void; onLeft: () => void }) {
+function People({ members, invites, isOwner, ownerId, projectId, me, onChange, onLeft }: { members: Member[]; invites: Invite[]; isOwner: boolean; ownerId: number; projectId: number; me: number | null; onChange: () => void; onLeft: () => void }) {
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"member" | "owner">("member");
   const [fresh, setFresh] = useState<(Invite & { email_sent?: boolean }) | null>(null);
   const [err, setErr] = useState("");
   const [copied, setCopied] = useState("");
@@ -347,7 +353,7 @@ function People({ members, invites, isOwner, projectId, me, onChange, onLeft }: 
     e.preventDefault();
     setErr("");
     try {
-      const inv = await api.invite(projectId, email.trim());
+      const inv = await api.invite(projectId, email.trim(), role);
       setFresh(inv);
       setEmail("");
       onChange();
@@ -362,6 +368,15 @@ function People({ members, invites, isOwner, projectId, me, onChange, onLeft }: 
       setTimeout(() => setCopied(""), 2000);
     } catch {
       window.prompt("Copy this link", link);
+    }
+  }
+  async function changeRole(m: Member, r: "owner" | "member") {
+    setErr("");
+    try {
+      await api.setRole(projectId, m.user_id, r);
+      onChange();
+    } catch (x) {
+      setErr(x instanceof Error ? x.message : "Could not change the role.");
     }
   }
   async function remove(m: Member) {
@@ -387,7 +402,13 @@ function People({ members, invites, isOwner, projectId, me, onChange, onLeft }: 
               {m.user_id === me && " (you)"}
               {m.role === "owner" && <small> owner</small>}
             </span>
-            {m.role !== "owner" && (isOwner || m.user_id === me) && (
+            {isOwner && m.user_id !== me && m.user_id !== ownerId && (
+              <select className="roleSel" value={m.role} aria-label={`Role of ${m.name}`} onChange={(e) => changeRole(m, e.target.value as "owner" | "member")}>
+                <option value="member">Member</option>
+                <option value="owner">Owner</option>
+              </select>
+            )}
+            {m.user_id !== ownerId && (isOwner || m.user_id === me) && (
               <button className="x show" aria-label={m.user_id === me ? "Leave project" : `Remove ${m.name}`} onClick={() => remove(m)}>
                 ×
               </button>
@@ -400,8 +421,13 @@ function People({ members, invites, isOwner, projectId, me, onChange, onLeft }: 
         <>
           <form className="inviteForm" onSubmit={invite}>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Friend's email, e.g. friend@gmail.com" aria-label="Friend's email" required autoFocus />
+            <select className="roleSel" value={role} aria-label="Role" onChange={(e) => setRole(e.target.value as "member" | "owner")}>
+              <option value="member">Member</option>
+              <option value="owner">Owner</option>
+            </select>
             <button className="btn primary">Invite</button>
           </form>
+          <p className="fine">Members can see everything and can only change tickets given to them or made by them. Owners can change anything.</p>
           {err && <p className="error">{err}</p>}
           {fresh && (
             <div className="linkBox" role="status">
@@ -429,7 +455,7 @@ function People({ members, invites, isOwner, projectId, me, onChange, onLeft }: 
               <h3>Waiting to join</h3>
               {invites.map((i) => (
                 <div key={i.id} className="pendingRow">
-                  <span>{i.email}</span>
+                  <span>{i.email}{i.role === "owner" && <small> owner</small>}</span>
                   <button
                     className="linkBtn"
                     onClick={async () => {
