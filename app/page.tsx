@@ -56,6 +56,10 @@ export default function Home() {
           ))}
         </div>
       </section>
+      <footer className="landFoot">
+        <Link href="/privacy">Privacy policy</Link>
+        <Link href="/terms">Terms of use</Link>
+      </footer>
     </main>
   );
 }

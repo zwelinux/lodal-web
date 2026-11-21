@@ -75,6 +75,10 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
             </>
           )}
         </p>
+        <p className="authLinks">
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+        </p>
       </form>
     </main>
   );
