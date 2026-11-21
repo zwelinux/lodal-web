@@ -3,7 +3,7 @@ export type Subject = { id: number; name: string; position: number };
 export type Entry = { subject: number; date: string; text: string };
 export type AssignedTicket = { id: number; project: number; project_name: string; title: string; date: string; done: boolean };
 export type GridResponse = { subjects: Subject[]; hidden_subjects: Subject[]; entries: Entry[]; assigned: AssignedTicket[]; user: User };
-export type AppNotification = { id: number; kind: "invited" | "accepted" | "assigned" | "done" | "message" | "clap" | "update" | "announcement"; title: string; body: string; link: string; created_at: string; read: boolean };
+export type AppNotification = { id: number; kind: "invited" | "accepted" | "assigned" | "done" | "message" | "clap" | "pulse" | "friend" | "update" | "announcement"; title: string; body: string; link: string; created_at: string; read: boolean };
 export type NotificationsResponse = { unread: number; items: AppNotification[] };
 export type DeleteResult = { result: "hidden" | "deleted" };
 
@@ -19,15 +19,23 @@ export type PulseLight = {
   mine: boolean;
   user?: number; // only for people who switched themselves on
   nickname?: string;
-  event?: { id: number; created_at: string; claps: number; clapped: boolean } | null;
+  last_seen?: string | null;
+  checked?: boolean; // you already checked their pulse in the last hour
+  relation?: "none" | "friend" | "requested" | "incoming";
+  events?: { id: number; created_at: string; claps: number; clapped: boolean }[];
 };
 export type PulseData = { total_users: number; active_now: number; windows: number; lights: PulseLight[]; me: { nickname: string; visible: boolean } };
+export type FriendsData = { friends: { user: number; nickname: string; unread: number }[]; incoming: { id: number; user: number; nickname: string }[]; unread: number };
+export type DirectMessage = { id: number; from: number; to: number; text: string; created_at: string; mine: boolean };
+export type ReportInput = { kind: "user" | "message" | "dm"; target: number; reason: "spam" | "harassment" | "inappropriate" | "other"; details?: string };
 export type ChatMessage = { id: number; user: number | null; name: string; text: string; created_at: string; mine: boolean };
 export type ChatPage = { items: ChatMessage[]; has_more: boolean };
 export type ProjectDetail = { project: ProjectSummary; members: Member[]; subjects: ProjectSubject[]; hidden_subjects: ProjectSubject[]; invites: Invite[]; tickets: ProjectTicket[] };
 export type InvitePreview = { project: string; email: string; invited_by: string | null; expired: boolean; accepted: boolean };
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+/** Address of the live direct-message connection */
+export const dmSocketUrl = () => `${API.replace(/^http/, "ws").replace(/\/api\/?$/, "")}/ws/dm`;
 /** Address of a project's live chat connection, e.g. wss://api.example.com/ws/projects/3/chat */
 export const chatSocketUrl = (projectId: number) => `${API.replace(/^http/, "ws").replace(/\/api\/?$/, "")}/ws/projects/${projectId}/chat`;
 const TOKEN_KEY = "lodal.token";
@@ -130,6 +138,20 @@ export const api = {
   pulse: () => call<PulseData>("/pulse"),
   pulseMe: (p: { nickname?: string; visible?: boolean }) => call<PulseData["me"]>("/pulse/me", { method: "PATCH", body: body(p) }),
   pulseDone: () => call<{ ok: boolean }>("/pulse/done", { method: "POST" }).catch(() => ({ ok: false })),
+  pulseCheck: (userId: number) => call<{ checked: boolean }>(`/pulse/users/${userId}/check`, { method: "POST" }),
+  friends: () => call<FriendsData>("/friends"),
+  friendRequest: (user: number) => call<{ relation: string }>("/friends/requests", { method: "POST", body: body({ user }) }),
+  acceptFriend: (id: number) => call<{ relation: string }>(`/friends/requests/${id}/accept`, { method: "POST" }),
+  declineFriend: (id: number) => call<void>(`/friends/requests/${id}/decline`, { method: "POST" }),
+  unfriend: (user: number) => call<void>(`/friends/${user}`, { method: "DELETE" }),
+  dm: (user: number, q: { after?: number; before?: number } = {}) =>
+    call<{ items: DirectMessage[]; has_more: boolean }>(`/dm/${user}${q.after ? `?after=${q.after}` : q.before ? `?before=${q.before}` : ""}`),
+  sendDm: (user: number, text: string) => call<DirectMessage>(`/dm/${user}`, { method: "POST", body: body({ text }) }),
+  readDm: (user: number) => call<{ unread: number }>(`/dm/${user}/read`, { method: "POST" }),
+  blocks: () => call<{ user: number; nickname: string }[]>("/blocks"),
+  block: (user: number) => call<{ blocked: number }>("/blocks", { method: "POST", body: body({ user }) }),
+  unblock: (user: number) => call<void>(`/blocks/${user}`, { method: "DELETE" }),
+  report: (r: ReportInput) => call<{ ok: boolean }>("/reports", { method: "POST", body: body(r) }),
   pulseClap: (eventId: number) => call<{ claps: number; clapped: boolean }>(`/pulse/events/${eventId}/clap`, { method: "POST" }),
   deleteTicket: (id: number) => call<void>(`/tickets/${id}`, { method: "DELETE" }),
   invitePreview: (token: string) => call<InvitePreview>(`/invites/${token}`),

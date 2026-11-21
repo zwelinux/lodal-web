@@ -645,7 +645,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 :root[data-theme="dark"] { --skyTop: #0a1420; --skyLow: #1d2c3b; --cityBack: #16222d; --cityBody: #0f1921; --cityGround: #0a1118; --winOff: #1d2a35; }
 :root:not([data-theme="dark"]) .cityStar, :root:not([data-theme="dark"]) .cityMoon { display: none; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cityStar, :root:not([data-theme="light"]) .cityMoon { display: inline; } }
-.mapCardPop { position: absolute; transform: translate(-50%, calc(-100% - 14px)); min-width: 190px; max-width: 260px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 32px rgba(0,0,0,.35); padding: 12px 14px; display: grid; gap: 6px; z-index: 3; }
+.mapCardPop { position: absolute; transform: translate(-50%, calc(-100% - 14px)); width: min(410px, 96%); max-height: 320px; overflow-y: auto; overflow-x: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 32px rgba(0,0,0,.35); padding: 12px 14px; display: grid; gap: 6px; z-index: 3; }
 .mapCardPop.left { transform: translate(-14%, calc(-100% - 14px)); }
 .mapCardPop.right { transform: translate(-86%, calc(-100% - 14px)); }
 .mapCardPop.below { transform: translate(-50%, 16px); }
@@ -654,3 +654,39 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .mapCardPop .x { position: absolute; top: 6px; right: 6px; }
 .mapCardPop .popLine small { color: var(--muted); margin-left: 4px; }
 .mapHint { margin: 8px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
+
+/* the profile card on Pulse */
+.profHead { display: flex; align-items: center; gap: 10px; padding-right: 20px; }
+.avatar.big { width: 38px; height: 38px; font-size: 16px; flex: none; }
+.profName { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.profName b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.status.on { color: var(--accent); }
+.checkBtn { flex: none; border: 1px solid var(--line); background: var(--head); color: var(--fg); border-radius: 999px; padding: 6px 10px; font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+.checkBtn:hover:not(:disabled) { border-color: var(--accent); }
+.checkBtn.on { background: var(--accent-soft); border-color: var(--accent); cursor: default; }
+.actTitle { margin: 6px 0 0; font-size: 12px; font-weight: 600; color: var(--muted); }
+.actList { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.actList li { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.actText small { color: var(--muted); margin-left: 4px; }
+.actEmpty { margin: 0; color: var(--muted); font-size: 13px; }
+.actList .clapBtn, .actList .clapCount { padding: 3px 10px; font-size: 13px; }
+
+/* friends, direct chat, report */
+.profActions { display: flex; gap: 8px; align-items: center; position: relative; }
+.profActions .menu { right: 0; left: auto; bottom: auto; top: calc(100% + 4px); z-index: 5; }
+.friendsBox { margin-top: 8px; }
+.friendList { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 8px; }
+.friendList li { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; }
+.friendName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.friendBadge { margin-left: 6px; background: var(--accent); color: var(--accent-fg); border-radius: 999px; padding: 0 7px; font-size: 12px; }
+.blockedBox summary { cursor: pointer; color: var(--muted); font-size: 13px; margin: 12px 0 8px; }
+.dmPanel { z-index: 63; }
+.chatHeadBtns { display: flex; align-items: center; gap: 4px; position: relative; }
+.dmMenu { position: relative; }
+.dmMenu .menu { right: 0; left: auto; top: calc(100% + 4px); bottom: auto; min-width: 180px; }
+.reasons { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; text-align: left; }
+.reasons label, .alsoBlock { display: flex; gap: 8px; align-items: center; cursor: pointer; text-align: left; }
+.dialog textarea { width: 100%; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--fg); padding: 10px 12px; font: inherit; resize: vertical; }
+.chatFlag { right: auto; left: -8px; }
+.chatMsg.mine .chatFlag { display: none; }

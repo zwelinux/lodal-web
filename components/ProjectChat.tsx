@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, chatSocketUrl, token, type ChatMessage } from "@/lib/api";
+import ReportDialog from "./ReportDialog";
 
 function clock(iso: string): string {
   const d = new Date(iso);
@@ -18,11 +19,17 @@ export default function ProjectChat({ projectId, me, isOwner, initialUnread }: {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const [report, setReport] = useState<ChatMessage | null>(null);
+  const [blockedIds, setBlockedIds] = useState<number[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
   const lastId = useRef(0);
   const stick = useRef(true); // keep the view at the newest message unless the reader scrolled up
   const openRef = useRef(false);
   const liveRef = useRef(false);
+
+  useEffect(() => {
+    api.blocks().then((b) => setBlockedIds(b.map((x) => x.user))).catch(() => {});
+  }, []);
 
   const merge = useCallback((fresh: ChatMessage[]) => {
     if (!fresh.length) return;
@@ -197,8 +204,8 @@ export default function ProjectChat({ projectId, me, isOwner, initialUnread }: {
             </button>
           )}
           {items.length === 0 && <p className="chatEmpty">No messages yet. Say hello to your team.</p>}
-          {items.map((m, i) => {
-            const prev = items[i - 1];
+          {items.filter((m) => m.user === null || !blockedIds.includes(m.user)).map((m, i, shown) => {
+            const prev = shown[i - 1];
             const mine = me !== null ? m.user === me : m.mine;
             const first = !prev || prev.user !== m.user || new Date(m.created_at).getTime() - new Date(prev.created_at).getTime() > 5 * 60000;
             return (
@@ -213,6 +220,11 @@ export default function ProjectChat({ projectId, me, isOwner, initialUnread }: {
                   {(mine || isOwner) && (
                     <button className="chatDel" aria-label="Delete message" title="Delete" onClick={() => remove(m)}>
                       ×
+                    </button>
+                  )}
+                  {!mine && (
+                    <button className="chatDel chatFlag" aria-label="Report message" title="Report" onClick={() => setReport(m)}>
+                      ⚑
                     </button>
                   )}
                 </div>
@@ -251,6 +263,8 @@ export default function ProjectChat({ projectId, me, isOwner, initialUnread }: {
           </button>
         </form>
       </aside>
+
+      {report && <ReportDialog kind="message" target={report.id} who={report.name} blockUserId={report.user ?? undefined} onClose={() => setReport(null)} onBlocked={() => report.user && setBlockedIds((b) => [...b, report.user as number])} />}
 
       <button className="chatFab" aria-label={unread ? `Chat, ${unread} new` : "Chat"} aria-expanded={open} title="Chat" onClick={() => setOpen((v) => !v)}>
         {open ? (
