@@ -706,3 +706,31 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .profHead { padding-right: 24px; }
 .friendChips.requests { margin-bottom: 10px; }
 .friendChip.incoming { border-color: var(--accent); background: var(--accent-soft); }
+
+/* sharing a progress report */
+.shareBox { gap: 8px; }
+.shareRow { display: flex; gap: 8px; }
+.shareRow input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 10px; padding: 9px 12px; font-size: 14px; }
+.reportPage { max-width: 680px; margin: 0 auto; padding: 20px 16px 48px; display: flex; flex-direction: column; gap: 14px; }
+.reportTop { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px 8px; }
+.reportTag { font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; }
+.reportCard { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+.reportCard h1 { font-size: 26px; margin: 0; color: var(--fg); }
+.reportCard h2 { font-size: 16px; margin: 0; color: var(--fg); }
+.reportHead { display: flex; align-items: baseline; justify-content: space-between; }
+.reportHead small { color: var(--muted); }
+.reportBar { height: 12px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.reportBar.slim { height: 6px; }
+.reportBar span { display: block; height: 100%; background: var(--accent); border-radius: 999px; transition: width .4s; }
+.reportNums { margin: 0; font-size: 15px; }
+.reportList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.reportList li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 15px; }
+.reportList li:first-child { border-top: 0; }
+.reportList li span:nth-child(2) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.reportList li small { color: var(--muted); white-space: nowrap; }
+.reportList li.done span:nth-child(2) { color: var(--muted); text-decoration: line-through; }
+.reportList .tick { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--line); display: grid; place-items: center; font-size: 13px; flex: none; }
+.reportList li.done .tick { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.reportList .empty { color: var(--muted); }
+.reportFoot { text-align: center; color: var(--muted); font-size: 13px; margin-top: 8px; }
+.reportFoot a { color: inherit; }

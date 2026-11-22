@@ -268,7 +268,7 @@ export default function ProjectView() {
                   ×
                 </button>
               </div>
-              <People members={members} invites={invites} isOwner={project.is_owner} ownerId={project.owner} projectId={id} me={me} onChange={load} onLeft={() => router.replace("/app/projects")} />
+              <People publicUrl={project.public_url ?? ""} members={members} invites={invites} isOwner={project.is_owner} ownerId={project.owner} projectId={id} me={me} onChange={load} onLeft={() => router.replace("/app/projects")} />
             </div>
           </div>
         )}
@@ -342,7 +342,7 @@ function ProjectName({ project, onRename }: { project: ProjectDetail["project"];
   );
 }
 
-function People({ members, invites, isOwner, ownerId, projectId, me, onChange, onLeft }: { members: Member[]; invites: Invite[]; isOwner: boolean; ownerId: number; projectId: number; me: number | null; onChange: () => void; onLeft: () => void }) {
+function People({ publicUrl, members, invites, isOwner, ownerId, projectId, me, onChange, onLeft }: { publicUrl: string; members: Member[]; invites: Invite[]; isOwner: boolean; ownerId: number; projectId: number; me: number | null; onChange: () => void; onLeft: () => void }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"member" | "owner">("member");
   const [fresh, setFresh] = useState<(Invite & { email_sent?: boolean }) | null>(null);
@@ -458,6 +458,7 @@ function People({ members, invites, isOwner, ownerId, projectId, me, onChange, o
                 ))}
             </div>
           )}
+          <ShareReport projectId={projectId} url={publicUrl} onChange={onChange} />
           <p className="fine">Members can see everything and can only change tickets given to them or made by them. Owners can change anything.</p>
           {err && <p className="error">{err}</p>}
           {fresh && (
@@ -544,5 +545,60 @@ function DangerZone({ isOwner, projectId }: { isOwner: boolean; projectId: numbe
     >
       Delete this project
     </button>
+  );
+}
+
+/** Owner only: turn a read-only progress report on or off. Anyone with the link can see it, no account needed. */
+function ShareReport({ projectId, url, onChange }: { projectId: number; url: string; onChange: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function set(on: boolean) {
+    setBusy(true);
+    setErr("");
+    try {
+      await api.setProjectPublic(projectId, on);
+      onChange();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not change sharing.");
+    }
+    setBusy(false);
+  }
+
+  return (
+    <div className="pending shareBox">
+      <h3>Share progress report</h3>
+      {url ? (
+        <>
+          <p className="fine">Anyone with this link can see the progress and task titles. They cannot edit, and they never see people, chat or emails.</p>
+          <div className="shareRow">
+            <input readOnly value={url} aria-label="Public link" onFocus={(e) => e.currentTarget.select()} />
+            <button
+              className="btn"
+              onClick={() => {
+                navigator.clipboard?.writeText(url).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1800);
+                });
+              }}
+            >
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+          <button className="linkBtn" disabled={busy} onClick={() => set(false)}>
+            Stop sharing
+          </button>
+        </>
+      ) : (
+        <>
+          <p className="fine">Make a link to a read-only report with the progress and task titles, for a client or a friend. You can turn it off any time.</p>
+          <button className="btn" disabled={busy} onClick={() => set(true)}>
+            Create public link
+          </button>
+        </>
+      )}
+      {err && <p className="error">{err}</p>}
+    </div>
   );
 }

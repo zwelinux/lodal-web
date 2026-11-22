@@ -7,7 +7,7 @@ export type AppNotification = { id: number; kind: "invited" | "accepted" | "assi
 export type NotificationsResponse = { unread: number; items: AppNotification[] };
 export type DeleteResult = { result: "hidden" | "deleted" };
 
-export type ProjectSummary = { id: number; name: string; owner: number; is_owner: boolean; role: "owner" | "member"; member_count: number; open_assigned_to_me: number; open_total: number; archived: boolean; unread_chat?: number };
+export type ProjectSummary = { id: number; name: string; owner: number; is_owner: boolean; role: "owner" | "member"; member_count: number; open_assigned_to_me: number; open_total: number; archived: boolean; unread_chat?: number; public_url?: string };
 export type Member = { user_id: number; name: string; role: "owner" | "member" };
 export type ProjectSubject = { id: number; name: string; position: number };
 export type ProjectTicket = { id: number; project: number; subject: number | null; title: string; date: string; assignee: number | null; done: boolean; created_by: number | null; can_edit: boolean };
@@ -32,6 +32,16 @@ export type ReportInput = { kind: "user" | "message" | "dm"; target: number; rea
 export type ChatMessage = { id: number; user: number | null; name: string; text: string; created_at: string; mine: boolean };
 export type ChatPage = { items: ChatMessage[]; has_more: boolean };
 export type ProjectDetail = { project: ProjectSummary; members: Member[]; subjects: ProjectSubject[]; hidden_subjects: ProjectSubject[]; invites: Invite[]; tickets: ProjectTicket[] };
+export type PublicReport = {
+  name: string;
+  total: number;
+  done: number;
+  percent: number;
+  people: number;
+  updated_at: string;
+  subjects: { name: string; total: number; done: number; tickets: { title: string; date: string; done: boolean }[] }[];
+  recently_done: { title: string; when: string }[];
+};
 export type InvitePreview = { project: string; email: string; friend: boolean; invited_by: string | null; expired: boolean; accepted: boolean };
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
@@ -156,6 +166,8 @@ export const api = {
   report: (r: ReportInput) => call<{ ok: boolean }>("/reports", { method: "POST", body: body(r) }),
   pulseClap: (eventId: number) => call<{ claps: number; clapped: boolean }>(`/pulse/events/${eventId}/clap`, { method: "POST" }),
   deleteTicket: (id: number) => call<void>(`/tickets/${id}`, { method: "DELETE" }),
+  setProjectPublic: (id: number, on: boolean) => call<ProjectDetail>(`/projects/${id}`, { method: "PATCH", body: body({ public: on }) }),
+  publicReport: (token: string) => call<PublicReport>(`/public/${token}`),
   invitePreview: (token: string) => call<InvitePreview>(`/invites/${token}`),
   acceptInvite: (token: string) => call<{ project: number }>(`/invites/${token}/accept`, { method: "POST" }),
   checkout: () => call<{ url: string }>("/billing/checkout", { method: "POST" }),
