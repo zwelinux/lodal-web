@@ -630,8 +630,8 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .winOn { fill: #ffd166; }
 .win .pane { fill: #ffd166; }
 .win .glow { fill: #ffd166; opacity: .22; filter: blur(2.5px); }
-.win.rest .pane { opacity: .38; }
-.win.rest .glow { opacity: 0; }
+.win.off .pane { fill: transparent; stroke: #ffd166; stroke-width: 1; opacity: .9; } /* not here now: dark window, outlined only while its card is open */
+.win.off:not(.sel) .pane { stroke: none; }
 .win.open .glow { animation: windowGlow 3s ease-in-out infinite; animation-delay: inherit; opacity: .45; }
 .win.open .hit { fill: transparent; cursor: pointer; }
 .win.me .pane { stroke: #fff; stroke-width: 1.2; }

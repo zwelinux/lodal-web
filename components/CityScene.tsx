@@ -54,7 +54,7 @@ export default function CityScene({ lights, selected, onSelect }: { lights: Puls
         return (
           <g
             key={l.slot}
-            className={`win ${l.active ? "on" : "rest"} ${l.mine ? "me" : ""} ${open ? "open" : ""} ${selected === l.slot ? "sel" : ""}`}
+            className={`win ${l.active ? "on" : "off"} ${l.mine ? "me" : ""} ${open ? "open" : ""} ${selected === l.slot ? "sel" : ""}`}
             style={{ animationDelay: `${(i * 0.53) % 3}s` }}
             onClick={(e) => {
               e.stopPropagation();
@@ -66,7 +66,7 @@ export default function CityScene({ lights, selected, onSelect }: { lights: Puls
             onKeyDown={(e) => open && (e.key === "Enter" || e.key === " ") && (e.preventDefault(), pick())}
           >
             <title>{label}</title>
-            <rect className="glow" x={w.x - 3} y={w.y - 3} width={WIN.w + 6} height={WIN.h + 6} rx="2" />
+            {l.active && <rect className="glow" x={w.x - 3} y={w.y - 3} width={WIN.w + 6} height={WIN.h + 6} rx="2" />}
             <rect className="pane" x={w.x} y={w.y} width={WIN.w} height={WIN.h} rx="1" />
             {open && <rect className="hit" x={w.x - 5} y={w.y - 5} width={WIN.w + 10} height={WIN.h + 10} />}
           </g>
