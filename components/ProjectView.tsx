@@ -568,10 +568,10 @@ function ShareReport({ projectId, url, onChange }: { projectId: number; url: str
 
   return (
     <div className="pending shareBox">
-      <h3>Share progress report</h3>
+      <h3>Share a read-only view</h3>
       {url ? (
         <>
-          <p className="fine">Anyone with this link can see the progress and task titles. They cannot edit, and they never see people, chat or emails.</p>
+          <p className="fine">Anyone with this link sees this project board, read-only: today, the full schedule and the task titles. They cannot edit, and they never see people, chat or emails.</p>
           <div className="shareRow">
             <input readOnly value={url} aria-label="Public link" onFocus={(e) => e.currentTarget.select()} />
             <button
@@ -592,7 +592,7 @@ function ShareReport({ projectId, url, onChange }: { projectId: number; url: str
         </>
       ) : (
         <>
-          <p className="fine">Make a link to a read-only report with the progress and task titles, for a client or a friend. You can turn it off any time.</p>
+          <p className="fine">Make a read-only link to this board, for a client or a friend. You can turn it off any time.</p>
           <button className="btn" disabled={busy} onClick={() => set(true)}>
             Create public link
           </button>

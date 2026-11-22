@@ -39,8 +39,8 @@ export type PublicReport = {
   percent: number;
   people: number;
   updated_at: string;
-  subjects: { name: string; total: number; done: number; tickets: { title: string; date: string; done: boolean }[] }[];
-  recently_done: { title: string; when: string }[];
+  subjects: ProjectSubject[];
+  tickets: { id: number; title: string; date: string; subject: number | null; done: boolean }[];
 };
 export type InvitePreview = { project: string; email: string; friend: boolean; invited_by: string | null; expired: boolean; accepted: boolean };
 

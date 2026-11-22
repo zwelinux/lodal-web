@@ -18,6 +18,7 @@ type Props = {
   filter: "all" | "mine";
   day: string;
   view: "today" | "week";
+  readOnly?: boolean; // the public report: look, never touch
   onUpdate: (t: ProjectTicket, patch: Patch) => void;
   onAdd: (p: { title: string; date: string; subject: number; assignee: number | null }) => void;
   onDelete: (t: ProjectTicket) => void;
@@ -33,7 +34,8 @@ export default function ProjectBoard(p: Props) {
   const day = p.day;
   const t = today();
   const { subjects, tickets, members } = p.data;
-  const isOwner = p.data.project.is_owner;
+  const ro = !!p.readOnly;
+  const isOwner = p.data.project.is_owner && !ro;
   const days = phone || p.view === "today" ? [day] : Array.from({ length: 7 }, (_, i) => addDays(day, i));
   const shown = tickets.filter((x) => p.filter === "all" || x.assignee === p.me);
   const firstSubject = subjects[0]?.id;
@@ -51,6 +53,7 @@ export default function ProjectBoard(p: Props) {
       date={d}
       past={d < t}
       isToday={d === t}
+      ro={ro}
       onUpdate={p.onUpdate}
       onDelete={p.onDelete}
       onAdd={(title) => p.onAdd({ title, date: d, subject: s.id, assignee: p.me })}
@@ -95,13 +98,15 @@ export default function ProjectBoard(p: Props) {
           </div>
         ))}
         {subjects.map((s, i) => (
-          <div key={s.id} {...dnd.row(s.id)} style={{ display: "contents", "--sc": subjColor(i) } as React.CSSProperties}>
-            <div className={`gSubj ${dnd.cls(s.id)}`}>
-              <button className="subjGrip" aria-label={`Move ${s.name}. Drag it, or press the up or down arrow key.`} title="Drag to reorder" {...dnd.handle(s.id)}>
-                ⋮⋮
-              </button>
+          <div key={s.id} {...(ro ? {} : dnd.row(s.id))} style={{ display: "contents", "--sc": subjColor(i) } as React.CSSProperties}>
+            <div className={`gSubj ${ro ? "" : dnd.cls(s.id)}`}>
+              {!ro && (
+                <button className="subjGrip" aria-label={`Move ${s.name}. Drag it, or press the up or down arrow key.`} title="Drag to reorder" {...dnd.handle(s.id)}>
+                  ⋮⋮
+                </button>
+              )}
               <i className="swatch" />
-              <SubjName key={s.name} s={s} onRename={p.onSubjectRename} />
+              {ro ? <span className="subjName subjStatic">{s.name}</span> : <SubjName key={s.name} s={s} onRename={p.onSubjectRename} />}
               {isOwner && subjects.length > 1 && (
                 <button className="x" aria-label={`Delete ${s.name}`} onClick={() => p.onSubjectDelete(s)}>
                   ×
@@ -136,6 +141,7 @@ function TicketCell({
   me,
   past,
   isToday,
+  ro,
   label,
   onUpdate,
   onDelete,
@@ -148,6 +154,7 @@ function TicketCell({
   date: string;
   past: boolean;
   isToday: boolean;
+  ro: boolean;
   label: string;
   onUpdate: (t: ProjectTicket, patch: Patch) => void;
   onDelete: (t: ProjectTicket) => void;
@@ -169,9 +176,9 @@ function TicketCell({
   return (
     <div
       className={`gCell ${isToday ? "isToday" : ""} ${past ? "isPast" : ""} ${over ? "dropOver" : ""}`}
-      onClick={(e) => !past && e.target === e.currentTarget && draftRef.current?.focus()}
+      onClick={(e) => !ro && !past && e.target === e.currentTarget && draftRef.current?.focus()}
       onDragOver={(e) => {
-        if (past || !e.dataTransfer.types.includes(TICKET_MIME)) return;
+        if (ro || past || !e.dataTransfer.types.includes(TICKET_MIME)) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
         if (!over) setOver(true);
@@ -181,7 +188,7 @@ function TicketCell({
       }}
       onDrop={(e) => {
         setOver(false);
-        if (past) return;
+        if (ro || past) return;
         const id = Number(e.dataTransfer.getData(TICKET_MIME));
         if (id) {
           e.preventDefault();
@@ -191,9 +198,9 @@ function TicketCell({
     >
       <div className="tasks">
         {tickets.map((tk) => (
-          <TicketItem key={`${tk.id}-${tk.title}`} t={tk} who={tk.assignee ? byId.get(tk.assignee) : undefined} members={members} me={me} past={past} label={label} onUpdate={onUpdate} onDelete={onDelete} />
+          <TicketItem key={`${tk.id}-${tk.title}`} ro={ro} t={tk} who={tk.assignee ? byId.get(tk.assignee) : undefined} members={members} me={me} past={past} label={label} onUpdate={onUpdate} onDelete={onDelete} />
         ))}
-        {!past && (
+        {!past && !ro && (
           <div className="task newTask">
             <span className="plus" aria-hidden="true">
               +
@@ -215,12 +222,12 @@ function TicketCell({
   );
 }
 
-function TicketItem({ t, who, members, past, label, onUpdate, onDelete }: { t: ProjectTicket; who?: Member; members: Member[]; me: number | null; past: boolean; label: string; onUpdate: (t: ProjectTicket, patch: Patch) => void; onDelete: (t: ProjectTicket) => void }) {
+function TicketItem({ ro, t, who, members, past, label, onUpdate, onDelete }: { ro: boolean; t: ProjectTicket; who?: Member; members: Member[]; me: number | null; past: boolean; label: string; onUpdate: (t: ProjectTicket, patch: Patch) => void; onDelete: (t: ProjectTicket) => void }) {
   const [title, setTitle] = useState(t.title);
   const [dragging, setDragging] = useState(false);
-  const locked = !t.can_edit; // a member can only change tickets given to them or made by them
+  const locked = ro || !t.can_edit; // a member can only change tickets given to them or made by them
   return (
-    <div className={`task ticketTask ${locked ? "locked" : ""} ${t.done ? "done" : ""} ${!t.done ? "hasGrip" : ""} ${dragging ? "dragging" : ""}`}>
+    <div className={`task ticketTask ${ro ? "ro" : ""} ${locked ? "locked" : ""} ${t.done ? "done" : ""} ${!t.done ? "hasGrip" : ""} ${dragging ? "dragging" : ""}`}>
       <button
         type="button"
         role="checkbox"
@@ -274,6 +281,7 @@ function TicketItem({ t, who, members, past, label, onUpdate, onDelete }: { t: P
           }
         }}
       />
+      {!ro && (
       <label className="assignee" title={who ? `Assigned to ${who.name}` : "Nobody yet. Click to assign."}>
         {who ? (
           <span className="avatar" style={{ background: hue(who.user_id) }} aria-hidden="true">
@@ -293,6 +301,7 @@ function TicketItem({ t, who, members, past, label, onUpdate, onDelete }: { t: P
           ))}
         </select>
       </label>
+      )}
       {!past && !locked && (
         <button className="x" aria-label="Delete ticket" onClick={() => onDelete(t)}>
           ×
