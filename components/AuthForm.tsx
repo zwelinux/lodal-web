@@ -19,8 +19,12 @@ declare global {
   }
 }
 
-/** The one way in: Continue with Google. There are no passwords, and signing up and logging in are the same step. */
-export default function AuthForm() {
+/** Email and password (temporary, until Google sign-in is set up) plus Continue with Google when it is configured. */
+export default function AuthForm({ mode = "login" }: { mode?: "login" | "signup" }) {
+  const signup = mode === "signup";
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const router = useRouter();
   const params = useSearchParams();
   const rawNext = params.get("next") ?? "";
@@ -29,6 +33,20 @@ export default function AuthForm() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const holder = useRef<HTMLDivElement>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const r = signup ? await api.register(email, password) : await api.login(email, password);
+      token.set(r.token);
+      router.replace(next);
+    } catch (err) {
+      setBusy(false);
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    }
+  }
 
   useEffect(() => {
     if (token.get()) router.replace(next);
@@ -80,28 +98,45 @@ export default function AuthForm() {
           <LogoMark />
           Lodal
         </Link>
-        <h1>Welcome to Lodal</h1>
-        <p className="fine">Plan your days, alone or with your team. New here? Just continue. We make your account for you.</p>
+        <h1>{signup ? "Create your account" : "Welcome back"}</h1>
         {hint && (
           <p className="fine">
-            Use the Google account for <b>{hint}</b>.
+            Use the account for <b>{hint}</b>.
           </p>
         )}
-        {CLIENT_ID ? (
-          <div className="googleSlot" aria-busy={busy}>
-            <div ref={holder} />
-            {busy && <p className="fine center">One moment…</p>}
-          </div>
-        ) : (
-          <p className="error" role="alert">
-            Google sign-in is not set up yet.
-          </p>
+        <form onSubmit={submit} className="authFields">
+          <label htmlFor="email">Email</label>
+          <input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <label htmlFor="password">Password</label>
+          <input id="password" type="password" autoComplete={signup ? "new-password" : "current-password"} required minLength={signup ? 8 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <button className="btn primary big" type="submit" disabled={busy}>
+            {busy ? "One moment…" : signup ? "Sign up" : "Log in"}
+          </button>
+        </form>
+        {CLIENT_ID && (
+          <>
+            <p className="fine center">or</p>
+            <div className="googleSlot" aria-busy={busy}>
+              <div ref={holder} />
+            </div>
+          </>
         )}
         {error && (
           <p className="error" role="alert">
             {error}
           </p>
         )}
+        <p className="fine center">
+          {signup ? (
+            <>
+              Already have an account? <Link href="/login">Log in</Link>
+            </>
+          ) : (
+            <>
+              New here? <Link href="/signup">Sign up</Link>
+            </>
+          )}
+        </p>
         <p className="fine center">
           By continuing you agree to the <Link href="/terms">Terms</Link> and the <Link href="/privacy">Privacy Policy</Link>.
         </p>

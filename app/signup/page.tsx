@@ -6,7 +6,7 @@ export const metadata = { title: "Sign in · Lodal" };
 export default function Page() {
   return (
     <Suspense>
-      <AuthForm />
+      <AuthForm mode="signup" />
     </Suspense>
   );
 }
