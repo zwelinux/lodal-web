@@ -17,7 +17,7 @@ export default function Page() {
           <b>Your account:</b> your email address, which Google gives us when you choose Continue with Google. We never see or store your Google password.
         </li>
         <li>
-          <b>What you write:</b> your subjects, tasks, projects, project tickets, notes, who a ticket is assigned to, and the dates and done marks on them.
+          <b>What you write:</b> your subjects, tasks, projects, project tickets, notes and the pictures you add to them, who a ticket is assigned to, and the dates and done marks on them.
         </li>
         <li>
           <b>Invitations:</b> if you invite someone to a project, we keep the email address you typed so the invitation link works for that person only.

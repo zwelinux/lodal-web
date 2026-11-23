@@ -175,6 +175,20 @@ export const api = {
   note: (id: number) => call<NoteDetail>(`/notes/${id}`),
   saveNote: (id: number, p: { title?: string; body?: string; base_version?: number }) => call<NoteDetail>(`/notes/${id}`, { method: "PATCH", body: body(p) }),
   setNotePublic: (id: number, on: boolean) => call<NoteDetail>(`/notes/${id}`, { method: "PATCH", body: body({ public: on }) }),
+  uploadNoteImage: async (id: number, file: File): Promise<{ url: string; width: number; height: number }> => {
+    const t = token.get();
+    const form = new FormData();
+    form.append("file", file);
+    let res: Response;
+    try {
+      res = await fetch(`${API}/notes/${id}/images`, { method: "POST", headers: t ? { Authorization: `Token ${t}` } : {}, body: form }); // the browser sets the multipart header itself
+    } catch {
+      throw new ApiError(0, "Can't reach the Lodal server. Check your internet.");
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(res.status, data.error ?? "Could not upload the picture.", data);
+    return data;
+  },
   deleteNote: (id: number) => call<void>(`/notes/${id}`, { method: "DELETE" }),
   shareNote: (id: number, email: string, can_edit: boolean) => call<NoteShare & { email_sent: boolean }>(`/notes/${id}/shares`, { method: "POST", body: body({ email, can_edit }) }),
   updateNoteShare: (id: number, shareId: number, can_edit: boolean) => call<NoteShare>(`/notes/${id}/shares/${shareId}`, { method: "PATCH", body: body({ can_edit }) }),

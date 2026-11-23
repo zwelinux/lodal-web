@@ -280,6 +280,15 @@ export default function NoteView() {
             body.current = md;
             touch();
           }}
+          onUpload={
+            canEdit
+              ? async (file) => {
+                  setError("");
+                  return (await api.uploadNoteImage(id, file)).url;
+                }
+              : undefined
+          }
+          onError={setError}
         />
       </main>
       {shareOpen && <ShareNote note={note} onClose={() => setShareOpen(false)} onChange={setNote} />}
