@@ -14,10 +14,10 @@ export default function Page() {
       <h2>What we keep</h2>
       <ul>
         <li>
-          <b>Your account:</b> your email address and your password. The password is stored only as a one-way scrambled value (a hash), so we cannot read it.
+          <b>Your account:</b> your email address, which Google gives us when you choose Continue with Google. We never see or store your Google password.
         </li>
         <li>
-          <b>What you write:</b> your subjects, tasks, projects, project tickets, who a ticket is assigned to, and the dates and done marks on them.
+          <b>What you write:</b> your subjects, tasks, projects, project tickets, notes, who a ticket is assigned to, and the dates and done marks on them.
         </li>
         <li>
           <b>Invitations:</b> if you invite someone to a project, we keep the email address you typed so the invitation link works for that person only.
@@ -71,8 +71,8 @@ export default function Page() {
 
       <h2>Security</h2>
       <p>
-        Lodal uses encrypted connections (HTTPS), stores passwords only as hashes, and limits repeated sign-up and login attempts. No online service can promise
-        perfect security, so please use a password you do not use elsewhere.
+        Lodal uses encrypted connections (HTTPS), keeps no passwords (sign-in is handled by Google), and limits repeated sign-in attempts. No online service can promise
+        perfect security, so please keep your Google account secure, ideally with 2-step verification.
       </p>
 
       <h2>Children</h2>

@@ -10,7 +10,7 @@ export default function Page() {
 
       <h2>Your account</h2>
       <p>
-        You need a valid email address. Keep your password private and tell us if you think someone else is using your account. You are responsible for what
+        You sign in with a Google account, so we use its verified email address. Keep your Google account secure and tell us if you think someone else is using your Lodal account. You are responsible for what
         happens under your account.
       </p>
 

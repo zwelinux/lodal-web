@@ -79,7 +79,7 @@ export default function SimpleBar() {
               ))}
             </div>
             <button role="menuitem" onClick={logout}>
-              Log out
+              Sign out
             </button>
             <button role="menuitem" className="danger" onClick={deleteAccount}>
               Delete my account

@@ -62,12 +62,11 @@ export default function InvitePage() {
 
             {!preview.expired && me === null && (
               <>
-                <p className="fine">Create a free account with this email, or log in if you already have one.</p>
-                <Link className="btn primary big" href={`/signup${qs}`}>
-                  Create account
-                </Link>
-                <Link className="btn" href={`/login${qs}`}>
-                  I already have an account
+                <p className="fine">
+                  Continue with Google{preview.email ? <> using <b>{preview.email}</b></> : ""} to join. New to Lodal? Your free account is made for you.
+                </p>
+                <Link className="btn primary big" href={`/login${qs}`}>
+                  Continue with Google
                 </Link>
               </>
             )}
@@ -91,7 +90,7 @@ export default function InvitePage() {
                     router.replace(`/login${qs}`);
                   }}
                 >
-                  Log out and switch account
+                  Sign out and switch account
                 </button>
               </>
             )}

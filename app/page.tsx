@@ -19,7 +19,7 @@ export default function Home() {
           Lodal
         </span>
         <Link href="/login" className="btn">
-          Log in
+          Sign in
         </Link>
       </header>
       <section className="hero">
@@ -30,8 +30,8 @@ export default function Home() {
         </h1>
         <p>Subjects on the left. Days across the top. Type in the box. That is all. Works on your phone and your computer.</p>
         <div className="heroActions">
-          <Link href="/signup" className="btn primary big">
-            Start free
+          <Link href="/login" className="btn primary big">
+            Continue with Google
           </Link>
           <span className="fine">Free with small ads. Remove them for $1 a month.</span>
         </div>

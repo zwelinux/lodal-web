@@ -1,85 +1,111 @@
 "use client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, token } from "@/lib/api";
+import { effectiveTheme } from "@/lib/theme";
 import LogoMark from "./LogoMark";
 
-export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
+const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
+const SCRIPT = "https://accounts.google.com/gsi/client";
+
+type GoogleId = {
+  initialize: (o: { client_id: string; callback: (r: { credential?: string }) => void }) => void;
+  renderButton: (el: HTMLElement, o: Record<string, string | number>) => void;
+};
+declare global {
+  interface Window {
+    google?: { accounts: { id: GoogleId } };
+  }
+}
+
+/** The one way in: Continue with Google. There are no passwords, and signing up and logging in are the same step. */
+export default function AuthForm() {
   const router = useRouter();
   const params = useSearchParams();
   const rawNext = params.get("next") ?? "";
   const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/app"; // only go to pages inside Lodal
-  const qs = rawNext ? `?next=${encodeURIComponent(next)}${params.get("email") ? `&email=${encodeURIComponent(params.get("email")!)}` : ""}` : "";
-  const [email, setEmail] = useState(params.get("email") ?? "");
-  const [password, setPassword] = useState("");
+  const hint = params.get("email") ?? "";
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const isSignup = mode === "signup";
+  const holder = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (token.get()) router.replace(next);
   }, [router, next]);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      const r = isSignup ? await api.register(email, password) : await api.login(email, password);
-      token.set(r.token);
-      router.replace(next);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
-      setBusy(false);
+  useEffect(() => {
+    if (!CLIENT_ID) return;
+    let gone = false;
+    const fail = (msg: string) => setTimeout(() => !gone && setError(msg), 0);
+
+    async function got(credential?: string) {
+      if (!credential) return fail("Google sign-in did not work. Please try again.");
+      setBusy(true);
+      setError("");
+      try {
+        const r = await api.googleLogin(credential);
+        token.set(r.token);
+        router.replace(next);
+      } catch (e) {
+        setBusy(false);
+        fail(e instanceof Error ? e.message : "Something went wrong.");
+      }
     }
-  }
+
+    function draw() {
+      const id = window.google?.accounts.id;
+      if (gone || !id || !holder.current) return;
+      id.initialize({ client_id: CLIENT_ID, callback: (r) => got(r.credential) });
+      id.renderButton(holder.current, { type: "standard", theme: effectiveTheme() === "dark" ? "filled_black" : "outline", size: "large", text: "continue_with", shape: "pill", logo_alignment: "left", width: 300 });
+    }
+
+    if (window.google) draw();
+    else {
+      const have = document.querySelector<HTMLScriptElement>(`script[src="${SCRIPT}"]`);
+      const s = have ?? Object.assign(document.createElement("script"), { src: SCRIPT, async: true });
+      s.addEventListener("load", draw);
+      s.addEventListener("error", () => fail("Could not load Google. Check your connection or turn off your ad blocker."));
+      if (!have) document.head.appendChild(s);
+    }
+    return () => {
+      gone = true;
+    };
+  }, [router, next]);
 
   return (
     <main className="authPage">
-      <form className="authCard" onSubmit={submit}>
+      <div className="authCard">
         <Link href="/" className="logo">
           <LogoMark />
           Lodal
         </Link>
-        <h1>{isSignup ? "Create your free account" : "Welcome back"}</h1>
-        <label htmlFor="email">Email</label>
-        <input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          autoComplete={isSignup ? "new-password" : "current-password"}
-          required
-          minLength={isSignup ? 8 : undefined}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        {isSignup && <p className="fine">At least 8 characters.</p>}
+        <h1>Welcome to Lodal</h1>
+        <p className="fine">Plan your days, alone or with your team. New here? Just continue. We make your account for you.</p>
+        {hint && (
+          <p className="fine">
+            Use the Google account for <b>{hint}</b>.
+          </p>
+        )}
+        {CLIENT_ID ? (
+          <div className="googleSlot" aria-busy={busy}>
+            <div ref={holder} />
+            {busy && <p className="fine center">One moment…</p>}
+          </div>
+        ) : (
+          <p className="error" role="alert">
+            Google sign-in is not set up yet.
+          </p>
+        )}
         {error && (
           <p className="error" role="alert">
             {error}
           </p>
         )}
-        <button className="btn primary big" disabled={busy}>
-          {busy ? "One moment…" : isSignup ? "Sign up" : "Log in"}
-        </button>
         <p className="fine center">
-          {isSignup ? (
-            <>
-              Already have an account? <Link href={`/login${qs}`}>Log in</Link>
-            </>
-          ) : (
-            <>
-              New here? <Link href={`/signup${qs}`}>Create a free account</Link>
-            </>
-          )}
+          By continuing you agree to the <Link href="/terms">Terms</Link> and the <Link href="/privacy">Privacy Policy</Link>.
         </p>
-        <p className="authLinks">
-          <Link href="/privacy">Privacy</Link>
-          <Link href="/terms">Terms</Link>
-        </p>
-      </form>
+      </div>
     </main>
   );
 }

@@ -11,7 +11,7 @@ export default function LegalShell({ title, updated, children }: { title: string
           Lodal
         </Link>
         <Link href="/login" className="btn">
-          Log in
+          Sign in
         </Link>
       </header>
       <article>

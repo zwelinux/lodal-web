@@ -1,12 +1,12 @@
 import { Suspense } from "react";
 import AuthForm from "@/components/AuthForm";
 
-export const metadata = { title: "Log in · Lodal" };
+export const metadata = { title: "Sign in · Lodal" };
 
 export default function Page() {
   return (
     <Suspense>
-      <AuthForm mode="login" />
+      <AuthForm />
     </Suspense>
   );
 }

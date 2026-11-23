@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { api, type ProjectDetail, type PublicReport } from "@/lib/api";
 import { addDays, dayNum, longDay, monthShort, rangeLabel, today, weekdayShort } from "@/lib/dates";
+import { ago } from "@/lib/ago";
 import { useIsPhone } from "@/lib/useIsPhone";
 import DateNav from "./DateNav";
 import LogoMark from "./LogoMark";
@@ -11,14 +12,6 @@ import ProjectBoard from "./ProjectBoard";
 import ViewToggle from "./ViewToggle";
 
 const noop = () => {};
-
-function ago(iso: string): string {
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  if (mins < 2) return "just now";
-  if (mins < 60) return `${mins} min ago`;
-  if (mins < 60 * 24) return `${Math.round(mins / 60)} h ago`;
-  return new Date(iso).toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
-}
 
 /** The read-only view of a shared project: the same board the team sees, with nothing to edit. */
 export default function PublicReportPage() {

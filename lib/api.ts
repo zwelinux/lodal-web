@@ -42,6 +42,11 @@ export type PublicReport = {
   subjects: ProjectSubject[];
   tickets: { id: number; title: string; date: string; subject: number | null; done: boolean }[];
 };
+export type NoteListItem = { id: number; title: string; snippet: string; updated_at: string; mine: boolean; can_edit: boolean; owner: string; shared: boolean };
+export type NotesList = { mine: NoteListItem[]; shared: NoteListItem[] };
+export type NoteShare = { id: number; email: string; can_edit: boolean };
+export type NoteDetail = { id: number; title: string; body: string; version: number; updated_at: string; updated_by: string; is_owner: boolean; can_edit: boolean; owner: string; public_url: string; shares: NoteShare[] };
+export type PublicNote = { title: string; body: string; updated_at: string };
 export type InvitePreview = { project: string; email: string; friend: boolean; invited_by: string | null; expired: boolean; accepted: boolean };
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
@@ -52,7 +57,7 @@ export const chatSocketUrl = (projectId: number) => `${API.replace(/^http/, "ws"
 const TOKEN_KEY = "lodal.token";
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(public status: number, message: string, public data?: Record<string, unknown>) {
     super(message);
   }
 }
@@ -93,17 +98,14 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   if (res.status === 204) return undefined as T;
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(res.status, data.error ?? "Something went wrong. Please try again.");
+  if (!res.ok) throw new ApiError(res.status, data.error ?? "Something went wrong. Please try again.", data);
   return data as T;
 }
 
 const body = (o: unknown) => JSON.stringify(o);
 
 export const api = {
-  register: (email: string, password: string) =>
-    call<{ token: string; user: User }>("/auth/register", { method: "POST", body: body({ email, password }) }),
-  login: (email: string, password: string) =>
-    call<{ token: string; user: User }>("/auth/login", { method: "POST", body: body({ email, password }) }),
+  googleLogin: (idToken: string) => call<{ token: string; user: User }>("/auth/google", { method: "POST", body: body({ id_token: idToken }) }),
   logout: () => call<void>("/auth/logout", { method: "POST" }),
   deleteAccount: () => call<void>("/me/delete", { method: "DELETE" }),
   grid: (from: string, to: string) => call<GridResponse>(`/grid?from=${from}&to=${to}`),
@@ -168,6 +170,17 @@ export const api = {
   deleteTicket: (id: number) => call<void>(`/tickets/${id}`, { method: "DELETE" }),
   setProjectPublic: (id: number, on: boolean) => call<ProjectDetail>(`/projects/${id}`, { method: "PATCH", body: body({ public: on }) }),
   publicReport: (token: string) => call<PublicReport>(`/public/${token}`),
+  notes: (q = "") => call<NotesList>(`/notes${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+  createNote: () => call<NoteDetail>("/notes", { method: "POST", body: body({ title: "", body: "" }) }),
+  note: (id: number) => call<NoteDetail>(`/notes/${id}`),
+  saveNote: (id: number, p: { title?: string; body?: string; base_version?: number }) => call<NoteDetail>(`/notes/${id}`, { method: "PATCH", body: body(p) }),
+  setNotePublic: (id: number, on: boolean) => call<NoteDetail>(`/notes/${id}`, { method: "PATCH", body: body({ public: on }) }),
+  deleteNote: (id: number) => call<void>(`/notes/${id}`, { method: "DELETE" }),
+  shareNote: (id: number, email: string, can_edit: boolean) => call<NoteShare & { email_sent: boolean }>(`/notes/${id}/shares`, { method: "POST", body: body({ email, can_edit }) }),
+  updateNoteShare: (id: number, shareId: number, can_edit: boolean) => call<NoteShare>(`/notes/${id}/shares/${shareId}`, { method: "PATCH", body: body({ can_edit }) }),
+  removeNoteShare: (id: number, shareId: number) => call<void>(`/notes/${id}/shares/${shareId}`, { method: "DELETE" }),
+  leaveNote: (id: number) => call<void>(`/notes/${id}/leave`, { method: "POST" }),
+  publicNote: (token: string) => call<PublicNote>(`/public/notes/${token}`),
   invitePreview: (token: string) => call<InvitePreview>(`/invites/${token}`),
   acceptInvite: (token: string) => call<{ project: number }>(`/invites/${token}/accept`, { method: "POST" }),
   checkout: () => call<{ url: string }>("/billing/checkout", { method: "POST" }),
