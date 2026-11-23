@@ -88,7 +88,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 
 /* app shell */
 .app { max-width: 1200px; margin: 0 auto; padding: 0 16px 48px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
-.bar { display: flex; align-items: center; gap: 12px; padding: 14px 0; flex-wrap: wrap; }
+.bar { display: flex; align-items: center; gap: 12px; padding: 14px 0; flex-wrap: wrap; min-height: 56px; }
 .barMid { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
 .range { font-size: 18px; font-weight: 600; margin-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sync { font-size: 13px; color: var(--muted); }
@@ -279,9 +279,14 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .gridWrap:not(.oneDay) .gCell.isPast .task:hover .grip { opacity: 1; }
 
 /* top tabs: My planner | Projects */
-.appTabs { display: inline-flex; gap: 2px; background: var(--head); border-radius: 10px; padding: 3px; margin-left: 12px; }
-.appTabs a { padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--muted); text-decoration: none; }
-.appTabs a[aria-current="page"] { background: var(--panel); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+/* main navigation: quiet text links with an underline on a computer, an icon bar along the bottom on a phone */
+.appTabs { display: flex; align-items: stretch; gap: 22px; margin-left: 28px; align-self: stretch; }
+.appTabs a { position: relative; display: inline-flex; align-items: center; padding: 0 2px; font-size: 15px; font-weight: 500; color: var(--muted); text-decoration: none; white-space: nowrap; transition: color .15s; }
+.appTabs a:hover { color: var(--fg); }
+.appTabs a[aria-current="page"] { color: var(--fg); font-weight: 600; }
+.appTabs a[aria-current="page"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: 5px; height: 2px; border-radius: 2px; background: var(--accent); }
+.appTabs a:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
+.appTabs svg { display: none; }
 
 /* projects */
 .projWrap { padding-bottom: 40px; display: flex; flex-direction: column; gap: 14px; }
@@ -350,7 +355,16 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .pTicket.done .pTitle { color: var(--muted); text-decoration: line-through; }
 .gCell.projCell { border-top-color: var(--accent); }
 .card.projCard2 h3 { display: flex; gap: 6px; align-items: center; }
-@media (max-width: 760px) { .appTabs { margin-left: 0; } .bar { flex-wrap: wrap; } }
+@media (max-width: 760px) {
+  .bar { flex-wrap: nowrap; }
+  .appTabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; margin: 0; gap: 0; display: grid; grid-template-columns: repeat(4, 1fr); background: var(--panel); border-top: 1px solid var(--line); padding: 4px 6px calc(4px + env(safe-area-inset-bottom)); }
+  .appTabs a { flex-direction: column; justify-content: center; gap: 3px; min-height: 56px; padding: 6px 2px; border-radius: 12px; font-size: 11px; font-weight: 500; -webkit-tap-highlight-color: transparent; }
+  .appTabs a:active { background: var(--head); }
+  .appTabs a[aria-current="page"] { color: var(--accent); font-weight: 600; }
+  .appTabs a[aria-current="page"]::after { display: none; }
+  .appTabs svg { display: block; }
+  .app { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+}
 .ticketRow.done .tick span, .pTicket.done .tick span { background: var(--accent); border-color: var(--accent); }
 .ticketRow .tick, .pTicket .tick { width: 36px; }
 
@@ -575,7 +589,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .chatPanel.open { opacity: 1; transform: none; pointer-events: auto; visibility: visible; }
 .liveDot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); margin-left: 6px; vertical-align: middle; }
 .liveDot.on { background: var(--accent); }
-@media (max-width: 640px) { .chatFab { right: 14px; bottom: 14px; } .chatPanel { right: 12px; bottom: 80px; } }
+@media (max-width: 640px) { .chatFab { right: 14px; bottom: calc(76px + env(safe-area-inset-bottom)); } .chatPanel { right: 12px; bottom: calc(142px + env(safe-area-inset-bottom)); height: min(540px, calc(100dvh - 210px)); } }
 .chatHead { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); }
 .chatHead h2 { margin: 0; font-size: 18px; }
 .chatList { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
