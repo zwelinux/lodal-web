@@ -737,24 +737,40 @@ function CalendarSmall() {
 
 /** Events from the person's Lodal calendar in Google. Read only: they are changed in Google Calendar. */
 function GcalList({ events }: { events: CalendarEvent[] }) {
+  const [gone, setGone] = useState<string[]>([]);
+  async function remove(id: string) {
+    setGone((g) => [...g, id]); // gone at once, Google is told in the background
+    try {
+      await api.deleteCalendarEvent(id);
+    } catch {
+      setGone((g) => g.filter((x) => x !== id));
+    }
+  }
   return (
     <div className="tasks projTasks gcalList">
-      {events.map((e) => {
-        const body = (
-          <>
-            {e.time && <b>{e.time}</b>} <span>{e.title}</span>
-          </>
-        );
-        return e.link ? (
-          <a key={e.id} className="gcalItem" href={e.link} target="_blank" rel="noreferrer" title="Open the Google Meet call">
-            {body}
-          </a>
-        ) : (
-          <div key={e.id} className="gcalItem">
-            {body}
-          </div>
-        );
-      })}
+      {events
+        .filter((e) => !gone.includes(e.id))
+        .map((e) => {
+          const body = (
+            <>
+              {e.time && <b>{e.time}</b>} <span>{e.title}</span>
+            </>
+          );
+          return e.link ? (
+            <div key={e.id} className="gcalRow">
+              <a className="gcalItem" href={e.link} target="_blank" rel="noreferrer" title="Open the Google Meet call">
+                {body}
+              </a>
+              <button type="button" className="gcalX" aria-label="Remove this call" title="Remove this call" onClick={() => remove(e.id)}>
+                ×
+              </button>
+            </div>
+          ) : (
+            <div key={e.id} className="gcalItem">
+              {body}
+            </div>
+          );
+        })}
     </div>
   );
 }

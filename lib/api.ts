@@ -216,6 +216,7 @@ export const api = {
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   },
   calendar: () => call<CalendarStatus>("/calendar"),
+  deleteCalendarEvent: (id: string) => call<void>(`/calendar/events/${encodeURIComponent(id)}`, { method: "DELETE" }),
   calendarConnect: (back = "") => call<{ url: string }>("/calendar/connect", { method: "POST", body: body({ back, tz: Intl.DateTimeFormat().resolvedOptions().timeZone }) }), // their own time zone, so "now" in their calendar is their now
   calendarSync: () => call<Pick<CalendarStatus, "last_synced_at" | "error" | "events">>("/calendar/sync", { method: "POST", body: body({ tz: Intl.DateTimeFormat().resolvedOptions().timeZone }) }),
   calendarDisconnect: () => call<{ ok: boolean }>("/calendar", { method: "DELETE" }),

@@ -892,3 +892,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .gcalItem { display: block; font-size: 14px; line-height: 1.35; padding: 2px 0; color: var(--fg); text-decoration: none; overflow-wrap: anywhere; }
 .gcalItem b { color: var(--muted); font-weight: 600; margin-right: 4px; }
 a.gcalItem:hover { text-decoration: underline; }
+.gcalRow { display: flex; align-items: flex-start; gap: 6px; }
+.gcalRow .gcalItem { flex: 1; }
+.gcalX { border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.gcalX:hover { color: var(--fg); }
