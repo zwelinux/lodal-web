@@ -263,6 +263,16 @@ function PlannerInner() {
       if (!bail(e)) setSync("offline");
     }
   }
+  async function purgeSubject(s: Subject) {
+    if (!confirm(`Delete "${s.name}" for good?\n\nEverything written in it will be erased, on every day. This is permanent and cannot be undone.`)) return;
+    try {
+      await api.deleteSubject(s.id, true);
+      setHiddenSubjects((l) => l.filter((x) => x.id !== s.id));
+      setNotice(`Deleted "${s.name}" for good.`);
+    } catch (e) {
+      if (!bail(e)) setSync("offline");
+    }
+  }
   async function restoreSubject(id: number) {
     try {
       const back = await api.restoreSubject(id);
@@ -444,6 +454,7 @@ function PlannerInner() {
         <DayView
           hiddenSubjects={hiddenSubjects}
           restoreSubject={restoreSubject}
+          purgeSubject={purgeSubject}
           reorderSubjects={reorderSubjects}
           assigned={assigned}
           toggleTicket={toggleTicket}
@@ -462,6 +473,7 @@ function PlannerInner() {
         <WeekGrid
           hiddenSubjects={hiddenSubjects}
           restoreSubject={restoreSubject}
+          purgeSubject={purgeSubject}
           reorderSubjects={reorderSubjects}
           assigned={assigned}
           toggleTicket={toggleTicket}
@@ -500,6 +512,7 @@ type SubjectActions = {
   removeSubject: (s: Subject) => void;
   hiddenSubjects: Subject[];
   restoreSubject: (id: number) => void;
+  purgeSubject: (s: Subject) => void;
   reorderSubjects: (ids: number[]) => void;
 };
 
@@ -547,7 +560,7 @@ function SubjectName({ s, rename }: { s: Subject; rename: (id: number, n: string
 
 const subjColor = (i: number) => `hsl(${(i * 57 + 165) % 360} 52% 56%)`;
 
-function WeekGrid({ days, view, setView, moveTask, assigned, toggleTicket, hiddenSubjects, restoreSubject, reorderSubjects, hideForDay, showForDay, hiddenToday, dayIsToday, subjects, cells, setCell, addSubject, renameSubject, removeSubject }: SubjectActions & { hideForDay?: (id: number) => void; showForDay: (id: number) => void; hiddenToday: Subject[]; dayIsToday: boolean; days: string[]; view: "today" | "week"; setView: (v: "today" | "week") => void; moveTask: (p: DragPayload, toSid: number, toDate: string) => void }) {
+function WeekGrid({ days, view, setView, moveTask, assigned, toggleTicket, hiddenSubjects, restoreSubject, purgeSubject, reorderSubjects, hideForDay, showForDay, hiddenToday, dayIsToday, subjects, cells, setCell, addSubject, renameSubject, removeSubject }: SubjectActions & { hideForDay?: (id: number) => void; showForDay: (id: number) => void; hiddenToday: Subject[]; dayIsToday: boolean; days: string[]; view: "today" | "week"; setView: (v: "today" | "week") => void; moveTask: (p: DragPayload, toSid: number, toDate: string) => void }) {
   const t = today();
   const dnd = useSubjectDnd(subjects.map((x) => x.id), reorderSubjects);
   return (
@@ -557,7 +570,7 @@ function WeekGrid({ days, view, setView, moveTask, assigned, toggleTicket, hidde
         <HiddenButton
           groups={[
             ...(hideForDay ? [{ label: dayIsToday ? "Hidden for today" : "Hidden for this day", items: hiddenToday, onRestore: showForDay }] : []),
-            { label: "Hidden subjects", items: hiddenSubjects, onRestore: restoreSubject },
+            { label: "Hidden subjects", items: hiddenSubjects, onRestore: restoreSubject, onDelete: (it) => purgeSubject(it as Subject) },
           ]}
         />
         <ViewToggle expanded={view === "week"} onClick={() => setView(view === "today" ? "week" : "today")} />
@@ -793,6 +806,7 @@ function DayView({
   toggleTicket,
   hiddenSubjects,
   restoreSubject,
+  purgeSubject,
   reorderSubjects,
   addSubject,
   renameSubject,
@@ -854,7 +868,7 @@ function DayView({
             </div>
           ))}
           <AddSubject onAdd={addSubject} />
-          <HiddenList label="Hidden subjects" items={hiddenSubjects} onRestore={restoreSubject} />
+          <HiddenList label="Hidden subjects" items={hiddenSubjects} onRestore={restoreSubject} onDelete={(it) => purgeSubject(it as Subject)} />
         </div>
       )}
     </main>

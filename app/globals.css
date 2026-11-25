@@ -798,3 +798,10 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 
 .authFields { display: flex; flex-direction: column; gap: 8px; }
 .authFields .btn { margin-top: 14px; }
+
+.rowIcons { display: flex; gap: 6px; flex: none; }
+.toolPop li .rowIcons { min-width: auto; }
+.iconBtn { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 10px; cursor: pointer; padding: 0; }
+.iconBtn:hover { border-color: var(--accent); color: var(--accent); }
+.iconBtn.danger:hover { border-color: #d64545; color: #d64545; }
+.iconBtn svg { width: 20px; height: 20px; }

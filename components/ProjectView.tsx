@@ -129,6 +129,13 @@ export default function ProjectView() {
       return r.result === "hidden" ? `Hidden "${sub.name}". Its tickets are kept.` : `Deleted "${sub.name}".`;
     });
   };
+  const purgeSubject = (sub: { id: number; name: string }) => {
+    if (!confirm(`Delete "${sub.name}" for good, for everyone?\n\nEvery ticket in it will be erased too. This is permanent and cannot be undone.`)) return;
+    run(async () => {
+      await api.deleteProjectSubject(sub.id, true);
+      return `Deleted "${sub.name}" for good.`;
+    });
+  };
   const restoreSubject = (sid: number) => run(() => api.restoreProjectSubject(sid));
   const reorderSubjects = (ids: number[]) => {
     setData((d) => {
@@ -203,7 +210,7 @@ export default function ProjectView() {
           <div className="boardTools">
             <div className="toolIcons">
               <AddSubjectButton onAdd={addSubject} />
-              <HiddenButton groups={[{ label: "Hidden subjects", items: data.hidden_subjects, onRestore: restoreSubject, canRestore: project.is_owner }]} />
+              <HiddenButton groups={[{ label: "Hidden subjects", items: data.hidden_subjects, onRestore: restoreSubject, onDelete: purgeSubject, canRestore: project.is_owner }]} />
               {!phone && (
                 <ViewToggle
                   expanded={view === "week"}

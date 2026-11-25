@@ -39,7 +39,7 @@ export function AddSubjectButton({ onAdd }: { onAdd: (name: string) => void }) {
   );
 }
 
-export type HiddenGroup = { label: string; items: { id: number; name: string }[]; onRestore: (id: number) => void; canRestore?: boolean };
+export type HiddenGroup = { label: string; items: { id: number; name: string }[]; onRestore: (id: number) => void; canRestore?: boolean; onDelete?: (item: { id: number; name: string }) => void };
 
 /** An "eye with a line" icon with a count. It only shows up when something is hidden. */
 export function HiddenButton({ groups }: { groups: HiddenGroup[] }) {
@@ -66,11 +66,22 @@ export function HiddenButton({ groups }: { groups: HiddenGroup[] }) {
                   {g.items.map((it) => (
                     <li key={it.id}>
                       <span>{it.name}</span>
-                      {g.canRestore !== false && (
-                        <button className="btn" onClick={() => g.onRestore(it.id)}>
-                          Show again
-                        </button>
-                      )}
+                      <span className="rowIcons">
+                        {g.canRestore !== false && (
+                          <button className="iconBtn" aria-label={`Show ${it.name} again`} title="Show again" onClick={() => g.onRestore(it.id)}>
+                            <svg {...svgProps}>
+                              <path d="M2.500 10C3.500 8.200 6 5 10 5s6.500 3.200 7.500 5c-1 1.800-3.500 5-7.500 5S3.500 11.800 2.500 10zM10 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />
+                            </svg>
+                          </button>
+                        )}
+                        {g.onDelete && g.canRestore !== false && (
+                          <button className="iconBtn danger" aria-label={`Delete ${it.name} for good`} title="Delete for good" onClick={() => g.onDelete?.(it)}>
+                            <svg {...svgProps}>
+                              <path d="M4 6h12M8 6V4h4v2M5.500 6l.7 10h7.600l.7-10M8.500 9v4M11.500 9v4" />
+                            </svg>
+                          </button>
+                        )}
+                      </span>
                     </li>
                   ))}
                 </ul>

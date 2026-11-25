@@ -114,7 +114,7 @@ export const api = {
   addSubject: (name: string) => call<Subject>("/subjects", { method: "POST", body: body({ name }) }),
   renameSubject: (id: number, name: string) =>
     call<Subject>(`/subjects/${id}`, { method: "PATCH", body: body({ name }) }),
-  deleteSubject: (id: number) => call<DeleteResult>(`/subjects/${id}`, { method: "DELETE" }),
+  deleteSubject: (id: number, permanent = false) => call<DeleteResult>(`/subjects/${id}${permanent ? "?permanent=1" : ""}`, { method: "DELETE" }),
   reorderSubjects: (ids: number[]) => call<{ ok: boolean }>("/subjects/reorder", { method: "POST", body: body({ ids }) }),
   reorderProjectSubjects: (projectId: number, ids: number[]) =>
     call<{ ok: boolean }>(`/projects/${projectId}/subjects/reorder`, { method: "POST", body: body({ ids }) }),
@@ -142,7 +142,7 @@ export const api = {
   deleteMessage: (id: number) => call<void>(`/messages/${id}`, { method: "DELETE" }),
   addProjectSubject: (id: number, name: string) => call<ProjectSubject>(`/projects/${id}/subjects`, { method: "POST", body: body({ name }) }),
   renameProjectSubject: (id: number, name: string) => call<ProjectSubject>(`/project-subjects/${id}`, { method: "PATCH", body: body({ name }) }),
-  deleteProjectSubject: (id: number) => call<DeleteResult>(`/project-subjects/${id}`, { method: "DELETE" }),
+  deleteProjectSubject: (id: number, permanent = false) => call<DeleteResult>(`/project-subjects/${id}${permanent ? "?permanent=1" : ""}`, { method: "DELETE" }),
   restoreProjectSubject: (id: number) => call<ProjectSubject>(`/project-subjects/${id}`, { method: "PATCH", body: body({ archived: false }) }),
   addTicket: (id: number, t: { title: string; date: string; assignee: number | null; subject?: number | null }) =>
     call<ProjectTicket>(`/projects/${id}/tickets`, { method: "POST", body: body(t) }),
