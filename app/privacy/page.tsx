@@ -14,7 +14,8 @@ export default function Page() {
       <h2>What we keep</h2>
       <ul>
         <li>
-          <b>Your account:</b> your email address, which Google gives us when you choose Continue with Google. We never see or store your Google password.
+          <b>Your account:</b> your email address, which Google (or Apple, in the iPhone app) gives us when you choose Continue with Google or Continue with Apple. If you hide your email in
+          Apple, we get the private address Apple makes for us. We never see or store your Google or Apple password.
         </li>
         <li>
           <b>What you write:</b> your subjects, tasks, projects, project tickets, notes and the pictures you add to them, who a ticket is assigned to, and the dates and done marks on them.
@@ -29,17 +30,21 @@ export default function Page() {
       </ul>
 
       <h2>Google Drive, Google Calendar and the browser extension</h2>
-      <p>These are optional. Nothing below happens unless you connect it yourself, and you can disconnect any time.</p>
+      <p>
+        Lodal keeps your files in your own Google account, so after you sign up it asks you to connect Google Drive and Google Calendar. Nothing below happens until you connect, and
+        you can disconnect any time (you will be asked to connect again the next time you open Lodal).
+      </p>
       <ul>
         <li>
           <b>Google Drive:</b> if you connect it, Lodal makes a folder called Lodal in <i>your</i> Drive. It keeps a copy of each of your notes there as a text file, and the
-          pictures you add, using the same names as in Lodal. Lodal asks Google for the narrow &quot;drive.file&quot; permission, so it can only see and change the files it
+          pictures you add, using the same names as in Lodal. The pictures and files you send in a chat are kept there too (in Lodal/Chat files), in the Drive of the person who sent them, and the
+          other people in that chat can open them through Lodal. If the sender deletes the message, or disconnects Drive, the file is removed or no longer opens. Lodal asks Google for the narrow &quot;drive.file&quot; permission, so it can only see and change the files it
           made itself, never the rest of your Drive. When you disconnect, your pictures are copied back into Lodal and the note files stay in your Drive.
         </li>
         <li>
           <b>Google Calendar:</b> if you connect it, Lodal makes a separate calendar called Lodal in your Google Calendar and puts your dated tasks and the project tickets
           assigned to you in it, as all-day events. Lodal asks for the narrow &quot;calendar.app.created&quot; permission, so it can only manage the calendar it made, never your
-          other calendars or events. Disconnecting removes that calendar.
+          other calendars or events. Disconnecting removes that calendar. When you press the video button in a chat, Lodal adds an event with a Google Meet link to that calendar and posts the link in the chat. Anyone with the link can ask to join the call.
         </li>
         <li>
           <b>Keeping the connection:</b> to keep Drive or Calendar up to date, Lodal stores a key from Google (a refresh token) for you, encrypted. It is used only for the
@@ -60,6 +65,9 @@ export default function Page() {
         <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements. We do not use
         this data for advertising and we do not sell it.
       </p>
+
+      <h2>Messages you save into a note</h2>
+      <p>You can save any chat message into one of your notes. It is copied into the note as text. From then on it is part of the note, with the same sharing as the note.</p>
 
       <h2>What we do not do</h2>
       <ul>
@@ -104,7 +112,7 @@ export default function Page() {
 
       <h2>Security</h2>
       <p>
-        Lodal uses encrypted connections (HTTPS), keeps no passwords (sign-in is handled by Google), and limits repeated sign-in attempts. No online service can promise
+        Lodal uses encrypted connections (HTTPS), keeps no passwords (sign-in is handled by Google or Apple), and limits repeated sign-in attempts. No online service can promise
         perfect security, so please keep your Google account secure, ideally with 2-step verification.
       </p>
 

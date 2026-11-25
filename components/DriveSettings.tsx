@@ -49,7 +49,7 @@ export default function DriveSettings() {
   }
 
   async function disconnect(force = false) {
-    if (!force && !(await ask(`Disconnect Google Drive?\n\nYour pictures are copied back into Lodal first, so your notes keep showing them. New pictures go to Lodal's own storage again.`, "Disconnect"))) return;
+    if (!force && !(await ask(`Disconnect Google Drive?\n\nYour pictures are copied back into Lodal first, so your notes keep showing them. You will be asked to connect again the next time you open Lodal.`, "Disconnect"))) return;
     setBusy(true);
     setErr("");
     try {

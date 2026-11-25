@@ -2,6 +2,7 @@
 import { ask } from "./DialogHost";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, chatSocketUrl, token, type ChatMessage } from "@/lib/api";
+import { ChatContent, ChatTools, SaveToNote } from "./ChatExtras";
 import ReportDialog from "./ReportDialog";
 
 function clock(iso: string): string {
@@ -21,6 +22,8 @@ export default function ProjectChat({ projectId, me, isOwner, initialUnread }: {
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const [report, setReport] = useState<ChatMessage | null>(null);
+  const [saving, setSaving] = useState<ChatMessage | null>(null);
+  const [flash, setFlash] = useState("");
   const [blockedIds, setBlockedIds] = useState<number[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
   const lastId = useRef(0);
@@ -161,6 +164,36 @@ export default function ProjectChat({ projectId, me, isOwner, initialUnread }: {
     setSending(false);
   }
 
+  async function sendFile(f: File) {
+    if (sending) return;
+    setSending(true);
+    setError("");
+    try {
+      const m = await api.sendMessageFile(projectId, f, draft.trim());
+      setDraft("");
+      stick.current = true;
+      merge([m]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not send.");
+    }
+    setSending(false);
+  }
+
+  async function startMeet() {
+    if (sending) return;
+    setSending(true);
+    setError("");
+    try {
+      const m = await api.projectMeet(projectId);
+      stick.current = true;
+      merge([m]);
+      window.open(m.meet, "_blank", "noopener");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not start the call.");
+    }
+    setSending(false);
+  }
+
   async function older() {
     if (!items.length) return;
     const r = await api.messages(projectId, { before: items[0].id }).catch(() => null);
@@ -217,7 +250,12 @@ export default function ProjectChat({ projectId, me, isOwner, initialUnread }: {
                   </div>
                 )}
                 <div className="chatBubble">
-                  <span>{m.text}</span>
+                  <ChatContent text={m.text} file={m.file} meet={m.meet} />
+                  {m.text && (
+                    <button className="chatDel chatSaveBtn" aria-label="Save to a note" title="Save to a note" onClick={() => setSaving(m)}>
+                      ✎
+                    </button>
+                  )}
                   {(mine || isOwner) && (
                     <button className="chatDel" aria-label="Delete message" title="Delete" onClick={() => remove(m)}>
                       ×
@@ -233,6 +271,7 @@ export default function ProjectChat({ projectId, me, isOwner, initialUnread }: {
             );
           })}
         </div>
+        {flash && <p className="chatNote">{flash}</p>}
         {error && (
           <p className="error chatErr" role="alert">
             {error}
@@ -245,6 +284,7 @@ export default function ProjectChat({ projectId, me, isOwner, initialUnread }: {
             send();
           }}
         >
+          <ChatTools onFile={sendFile} onMeet={startMeet} busy={sending} />
           <textarea
             value={draft}
             rows={1}
@@ -265,6 +305,14 @@ export default function ProjectChat({ projectId, me, isOwner, initialUnread }: {
         </form>
       </aside>
 
+      {saving && (
+        <SaveToNote
+          text={saving.text}
+          who={`${saving.name}, ${clock(saving.created_at)}`}
+          onClose={() => setSaving(null)}
+          onDone={(msg) => (setSaving(null), setFlash(msg), setTimeout(() => setFlash(""), 3000))}
+        />
+      )}
       {report && <ReportDialog kind="message" target={report.id} who={report.name} blockUserId={report.user ?? undefined} onClose={() => setReport(null)} onBlocked={() => report.user && setBlockedIds((b) => [...b, report.user as number])} />}
 
       <button className="chatFab" aria-label={unread ? `Chat, ${unread} new` : "Chat"} aria-expanded={open} title="Chat" onClick={() => setOpen((v) => !v)}>

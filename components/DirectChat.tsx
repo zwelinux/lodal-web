@@ -2,6 +2,7 @@
 import { ask } from "./DialogHost";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, dmSocketUrl, token, type DirectMessage } from "@/lib/api";
+import { ChatContent, ChatTools, SaveToNote } from "./ChatExtras";
 import ReportDialog from "./ReportDialog";
 
 function clock(iso: string): string {
@@ -18,6 +19,8 @@ export default function DirectChat({ peer, onClose, onChanged }: { peer: { user:
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const [live, setLive] = useState(false);
+  const [saving, setSaving] = useState<DirectMessage | null>(null);
+  const [flash, setFlash] = useState("");
   const [menu, setMenu] = useState(false);
   const [report, setReport] = useState<{ kind: "user" | "dm"; target: number } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -130,6 +133,36 @@ export default function DirectChat({ peer, onClose, onChanged }: { peer: { user:
     setSending(false);
   }
 
+  async function sendFile(f: File) {
+    if (sending) return;
+    setSending(true);
+    setError("");
+    try {
+      const m = await api.sendDmFile(peer.user, f, draft.trim());
+      setDraft("");
+      stick.current = true;
+      merge([m]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not send.");
+    }
+    setSending(false);
+  }
+
+  async function startMeet() {
+    if (sending) return;
+    setSending(true);
+    setError("");
+    try {
+      const m = await api.dmMeet(peer.user);
+      stick.current = true;
+      merge([m]);
+      window.open(m.meet, "_blank", "noopener");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not start the call.");
+    }
+    setSending(false);
+  }
+
   async function older() {
     if (!items.length) return;
     const r = await api.dm(peer.user, { before: items[0].id }).catch(() => null);
@@ -215,7 +248,12 @@ export default function DirectChat({ peer, onClose, onChanged }: { peer: { user:
                 </div>
               )}
               <div className="chatBubble">
-                <span>{m.text}</span>
+                <ChatContent text={m.text} file={m.file} meet={m.meet} />
+                {m.text && (
+                  <button className="chatDel chatSaveBtn" aria-label="Save to a note" title="Save to a note" onClick={() => setSaving(m)}>
+                    ✎
+                  </button>
+                )}
                 {!m.mine && (
                   <button className="chatDel" aria-label="Report message" title="Report" onClick={() => setReport({ kind: "dm", target: m.id })}>
                     ⚑
@@ -226,6 +264,7 @@ export default function DirectChat({ peer, onClose, onChanged }: { peer: { user:
           );
         })}
       </div>
+      {flash && <p className="chatNote">{flash}</p>}
       {error && (
         <p className="error chatErr" role="alert">
           {error}
@@ -238,6 +277,7 @@ export default function DirectChat({ peer, onClose, onChanged }: { peer: { user:
           send();
         }}
       >
+        <ChatTools onFile={sendFile} onMeet={startMeet} busy={sending} />
         <textarea
           value={draft}
           rows={1}
@@ -256,6 +296,14 @@ export default function DirectChat({ peer, onClose, onChanged }: { peer: { user:
           Send
         </button>
       </form>
+      {saving && (
+        <SaveToNote
+          text={saving.text}
+          who={`${saving.mine ? "Me" : peer.nickname}, ${clock(saving.created_at)}`}
+          onClose={() => setSaving(null)}
+          onDone={(msg) => (setSaving(null), setFlash(msg), setTimeout(() => setFlash(""), 3000))}
+        />
+      )}
       {report && <ReportDialog kind={report.kind} target={report.target} who={peer.nickname} blockUserId={peer.user} onClose={() => setReport(null)} onBlocked={() => (onChanged(), onClose())} />}
     </aside>
   );

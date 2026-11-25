@@ -1,4 +1,4 @@
-export type User = { id: number; email: string; is_pro: boolean };
+export type User = { id: number; email: string; is_pro: boolean; google?: { drive: boolean; calendar: boolean } };
 export type Subject = { id: number; name: string; position: number };
 export type Entry = { subject: number; date: string; text: string };
 export type AssignedTicket = { id: number; project: number; project_name: string; title: string; date: string; done: boolean };
@@ -27,9 +27,10 @@ export type PulseLight = {
 };
 export type PulseData = { total_users: number; active_now: number; windows: number; lights: PulseLight[]; me: { nickname: string; visible: boolean } };
 export type FriendsData = { friends: { user: number; nickname: string; unread: number; active: boolean }[]; incoming: { id: number; user: number; nickname: string }[]; unread: number };
-export type DirectMessage = { id: number; from: number; to: number; text: string; created_at: string; mine: boolean };
+export type DirectMessage = { id: number; from: number; to: number; text: string; file?: ChatFile | null; meet?: string; created_at: string; mine: boolean };
 export type ReportInput = { kind: "user" | "message" | "dm"; target: number; reason: "spam" | "harassment" | "inappropriate" | "other"; details?: string };
-export type ChatMessage = { id: number; user: number | null; name: string; text: string; created_at: string; mine: boolean };
+export type ChatFile = { token: string; name: string; type: string; size: number; image: boolean; width: number; height: number };
+export type ChatMessage = { id: number; user: number | null; name: string; text: string; file?: ChatFile | null; meet?: string; created_at: string; mine: boolean };
 export type ChatPage = { items: ChatMessage[]; has_more: boolean };
 export type ProjectDetail = { project: ProjectSummary; members: Member[]; subjects: ProjectSubject[]; hidden_subjects: ProjectSubject[]; invites: Invite[]; tickets: ProjectTicket[] };
 export type PublicReport = {
@@ -94,7 +95,7 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
     res = await fetch(API + path, {
       ...init,
       headers: {
-        "Content-Type": "application/json",
+        ...(init.body instanceof FormData ? {} : { "Content-Type": "application/json" }), // a file upload sets its own type
         ...(t ? { Authorization: `Token ${t}` } : {}),
       },
     });
@@ -108,6 +109,15 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 const body = (o: unknown) => JSON.stringify(o);
+const withFile = (file: File, text: string) => {
+  const f = new FormData();
+  f.append("file", file);
+  if (text) f.append("text", text);
+  return f;
+};
+
+/** The address of a picture or file sent in a chat. */
+export const chatFileUrl = (tokenValue: string) => `${API}/chat-files/${tokenValue}`;
 
 export const api = {
   googleLogin: (idToken: string) => call<{ token: string; user: User }>("/auth/google", { method: "POST", body: body({ id_token: idToken }) }),
@@ -140,6 +150,9 @@ export const api = {
   removeMember: (id: number, userId: number) => call<void>(`/projects/${id}/members/${userId}`, { method: "DELETE" }),
   messages: (id: number, q: { after?: number; before?: number } = {}) =>
     call<ChatPage>(`/projects/${id}/messages${q.after ? `?after=${q.after}` : q.before ? `?before=${q.before}` : ""}`),
+  sendMessageFile: (id: number, file: File, text = "") => call<ChatMessage>(`/projects/${id}/messages`, { method: "POST", body: withFile(file, text) }),
+  projectMeet: (id: number) => call<ChatMessage>(`/projects/${id}/meet`, { method: "POST" }),
+  appendToNote: (id: number, text: string, from = "") => call<{ id: number; title: string }>(`/notes/${id}/append`, { method: "POST", body: body({ text, from }) }),
   sendMessage: (id: number, text: string) => call<ChatMessage>(`/projects/${id}/messages`, { method: "POST", body: body({ text }) }),
   readMessages: (id: number) => call<{ unread: number }>(`/projects/${id}/messages/read`, { method: "POST" }),
   deleteMessage: (id: number) => call<void>(`/messages/${id}`, { method: "DELETE" }),
@@ -165,6 +178,8 @@ export const api = {
   unfriend: (user: number) => call<void>(`/friends/${user}`, { method: "DELETE" }),
   dm: (user: number, q: { after?: number; before?: number } = {}) =>
     call<{ items: DirectMessage[]; has_more: boolean }>(`/dm/${user}${q.after ? `?after=${q.after}` : q.before ? `?before=${q.before}` : ""}`),
+  sendDmFile: (user: number, file: File, text = "") => call<DirectMessage>(`/dm/${user}`, { method: "POST", body: withFile(file, text) }),
+  dmMeet: (user: number) => call<DirectMessage>(`/dm/${user}/meet`, { method: "POST" }),
   sendDm: (user: number, text: string) => call<DirectMessage>(`/dm/${user}`, { method: "POST", body: body({ text }) }),
   readDm: (user: number) => call<{ unread: number }>(`/dm/${user}/read`, { method: "POST" }),
   blocks: () => call<{ user: number; nickname: string }[]>("/blocks"),
@@ -200,11 +215,11 @@ export const api = {
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   },
   calendar: () => call<CalendarStatus>("/calendar"),
-  calendarConnect: () => call<{ url: string }>("/calendar/connect", { method: "POST", body: body({ tz: Intl.DateTimeFormat().resolvedOptions().timeZone }) }), // their own time zone, so "now" in their calendar is their now
+  calendarConnect: (back = "") => call<{ url: string }>("/calendar/connect", { method: "POST", body: body({ back, tz: Intl.DateTimeFormat().resolvedOptions().timeZone }) }), // their own time zone, so "now" in their calendar is their now
   calendarSync: () => call<Pick<CalendarStatus, "last_synced_at" | "error" | "events">>("/calendar/sync", { method: "POST", body: body({ tz: Intl.DateTimeFormat().resolvedOptions().timeZone }) }),
   calendarDisconnect: () => call<{ ok: boolean }>("/calendar", { method: "DELETE" }),
   drive: () => call<DriveStatus>("/drive"),
-  driveConnect: () => call<{ url: string }>("/drive/connect", { method: "POST" }),
+  driveConnect: (back = "") => call<{ url: string }>("/drive/connect", { method: "POST", body: body({ back }) }),
   driveDisconnect: (force = false) => call<{ ok: boolean; failed: number }>(`/drive${force ? "?force=1" : ""}`, { method: "DELETE" }),
   noteFolders: () => call<NoteFolder[]>("/note-folders"),
   createFolder: (name: string) => call<NoteFolder>("/note-folders", { method: "POST", body: body({ name }) }),
