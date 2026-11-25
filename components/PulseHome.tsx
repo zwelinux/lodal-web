@@ -86,12 +86,16 @@ export default function PulseHome() {
       return () => clearTimeout(t);
     }
   }, [want, data, load]);
-  // a message notification opens that friend's chat
+  // a message notification opens that friend's chat, once: the friends list refreshes often and must not reopen a closed chat
+  const openedChat = useRef<number | null>(null);
   useEffect(() => {
-    if (!chatParam || !friends) return;
+    if (!chatParam || !friends || openedChat.current === chatParam) return;
     const f = friends.friends.find((x) => x.user === chatParam);
     if (f) {
-      const t = setTimeout(() => setChatWith({ user: f.user, nickname: f.nickname }), 0);
+      const t = setTimeout(() => {
+        openedChat.current = chatParam;
+        setChatWith({ user: f.user, nickname: f.nickname });
+      }, 0);
       return () => clearTimeout(t);
     }
   }, [chatParam, friends]);
