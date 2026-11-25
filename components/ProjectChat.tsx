@@ -1,4 +1,5 @@
 "use client";
+import { ask } from "./DialogHost";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, chatSocketUrl, token, type ChatMessage } from "@/lib/api";
 import ReportDialog from "./ReportDialog";
@@ -170,7 +171,7 @@ export default function ProjectChat({ projectId, me, isOwner, initialUnread }: {
   }
 
   async function remove(m: ChatMessage) {
-    if (!confirm("Delete this message for everyone?")) return;
+    if (!(await ask("Delete this message for everyone?"))) return;
     try {
       await api.deleteMessage(m.id);
       setItems((cur) => cur.filter((x) => x.id !== m.id));

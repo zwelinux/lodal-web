@@ -1,4 +1,5 @@
 "use client";
+import { ask } from "./DialogHost";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, dmSocketUrl, token, type DirectMessage } from "@/lib/api";
 import ReportDialog from "./ReportDialog";
@@ -139,7 +140,7 @@ export default function DirectChat({ peer, onClose, onChanged }: { peer: { user:
   }
 
   async function blockThem() {
-    if (!confirm(`Block ${peer.nickname}? You will not see each other and you stop being friends.`)) return;
+    if (!(await ask(`Block ${peer.nickname}? You will not see each other and you stop being friends.`))) return;
     try {
       await api.block(peer.user);
       onChanged();
@@ -149,7 +150,7 @@ export default function DirectChat({ peer, onClose, onChanged }: { peer: { user:
     }
   }
   async function unfriendThem() {
-    if (!confirm(`Remove ${peer.nickname} from your friends?`)) return;
+    if (!(await ask(`Remove ${peer.nickname} from your friends?`))) return;
     try {
       await api.unfriend(peer.user);
       onChanged();

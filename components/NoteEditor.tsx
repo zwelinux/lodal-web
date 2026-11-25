@@ -1,4 +1,5 @@
 "use client";
+import { askText } from "./DialogHost";
 import Image from "@tiptap/extension-image";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
@@ -123,9 +124,9 @@ function Toolbar({ editor, onPick, busy }: { editor: Editor; onPick?: (files: Fi
     }),
   });
 
-  function link() {
+  async function link() {
     if (on.link) return void editor.chain().focus().unsetLink().run();
-    const href = window.prompt("Link address, for example https://lodal.app")?.trim();
+    const href = (await askText("Add a link", { hint: "https://lodal.app" }))?.trim();
     if (!href) return;
     const ok = /^(https?:\/\/|mailto:)/i.test(href) ? href : `https://${href}`;
     editor.chain().focus().extendMarkRange("link").setLink({ href: ok }).run();

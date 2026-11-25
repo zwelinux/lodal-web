@@ -1,4 +1,5 @@
 "use client";
+import { ask } from "./DialogHost";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -251,7 +252,7 @@ function PlannerInner() {
     }
   }
   async function removeSubject(s: Subject) {
-    if (!confirm(`Remove "${s.name}"?\n\nIf it is empty it is deleted. If something is written in it, it is only hidden and nothing is lost. You can show it again from "Hidden subjects".`)) return;
+    if (!(await ask(`Remove "${s.name}"?\n\nIf it is empty it is deleted. If something is written in it, it is only hidden and nothing is lost. You can show it again from "Hidden subjects".`))) return;
     try {
       const r = await api.deleteSubject(s.id);
       setSubjects((l) => l.filter((x) => x.id !== s.id));
@@ -264,7 +265,7 @@ function PlannerInner() {
     }
   }
   async function purgeSubject(s: Subject) {
-    if (!confirm(`Delete "${s.name}" for good?\n\nEverything written in it will be erased, on every day. This is permanent and cannot be undone.`)) return;
+    if (!(await ask(`Delete "${s.name}" for good?\n\nEverything written in it will be erased, on every day. This is permanent and cannot be undone.`))) return;
     try {
       await api.deleteSubject(s.id, true);
       setHiddenSubjects((l) => l.filter((x) => x.id !== s.id));
@@ -334,7 +335,7 @@ function PlannerInner() {
     router.replace("/");
   }
   async function deleteAccount() {
-    if (!confirm("Delete your account and all your data forever? This cannot be undone.")) return;
+    if (!(await ask("Delete your account and all your data forever? This cannot be undone."))) return;
     try {
       await api.deleteAccount();
       token.clear();

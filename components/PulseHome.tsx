@@ -1,4 +1,5 @@
 "use client";
+import { ask } from "./DialogHost";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, token, type FriendsData, type PulseData } from "@/lib/api";
@@ -126,7 +127,7 @@ export default function PulseHome() {
     }
   }
   async function blockUser(userId: number, name: string) {
-    if (!confirm(`Block ${name}? You will not see each other, and you stop being friends if you were.`)) return;
+    if (!(await ask(`Block ${name}? You will not see each other, and you stop being friends if you were.`))) return;
     try {
       await api.block(userId);
       setSelected(null);

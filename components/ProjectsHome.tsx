@@ -1,4 +1,5 @@
 "use client";
+import { ask } from "./DialogHost";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -35,7 +36,7 @@ export default function ProjectsHome() {
   }, [router]);
 
   async function removeProject(p: ProjectSummary) {
-    if (!confirm(`Delete "${p.name}"?\n\nIf it has no tickets it is deleted. If it has tickets, it is only hidden for everyone and nothing is lost. You can bring it back from "Hidden projects".`)) return;
+    if (!(await ask(`Delete "${p.name}"?\n\nIf it has no tickets it is deleted. If it has tickets, it is only hidden for everyone and nothing is lost. You can bring it back from "Hidden projects".`))) return;
     try {
       const r = await api.deleteProject(p.id);
       setList((l) => (l ? l.filter((x) => x.id !== p.id) : l));

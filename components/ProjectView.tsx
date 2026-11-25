@@ -1,4 +1,5 @@
 "use client";
+import { ask, askText } from "./DialogHost";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -122,15 +123,15 @@ export default function ProjectView() {
     setData((d) => (d ? { ...d, subjects: d.subjects.map((x) => (x.id === sid ? { ...x, name } : x)) } : d));
     run(() => api.renameProjectSubject(sid, name));
   };
-  const deleteSubject = (sub: ProjectSubject) => {
-    if (!confirm(`Remove "${sub.name}" for everyone?\n\nIf it is empty it is deleted. If it has tickets, it is only hidden and nothing is lost. You can show it again from "Hidden subjects".`)) return;
+  const deleteSubject = async (sub: ProjectSubject) => {
+    if (!(await ask(`Remove "${sub.name}" for everyone?\n\nIf it is empty it is deleted. If it has tickets, it is only hidden and nothing is lost. You can show it again from "Hidden subjects".`))) return;
     run(async () => {
       const r = await api.deleteProjectSubject(sub.id);
       return r.result === "hidden" ? `Hidden "${sub.name}". Its tickets are kept.` : `Deleted "${sub.name}".`;
     });
   };
-  const purgeSubject = (sub: { id: number; name: string }) => {
-    if (!confirm(`Delete "${sub.name}" for good, for everyone?\n\nEvery ticket in it will be erased too. This is permanent and cannot be undone.`)) return;
+  const purgeSubject = async (sub: { id: number; name: string }) => {
+    if (!(await ask(`Delete "${sub.name}" for good, for everyone?\n\nEvery ticket in it will be erased too. This is permanent and cannot be undone.`))) return;
     run(async () => {
       await api.deleteProjectSubject(sub.id, true);
       return `Deleted "${sub.name}" for good.`;
@@ -379,7 +380,7 @@ function People({ publicUrl, members, invites, isOwner, ownerId, projectId, me, 
       setCopied(link);
       setTimeout(() => setCopied(""), 2000);
     } catch {
-      window.prompt("Copy this link", link);
+      await askText("Copy this link", { value: link });
     }
   }
   async function changeRole(m: Member, r: "owner" | "member") {
@@ -393,7 +394,7 @@ function People({ publicUrl, members, invites, isOwner, ownerId, projectId, me, 
   }
   async function remove(m: Member) {
     const self = m.user_id === me;
-    if (!confirm(self ? "Leave this project? Tickets assigned to you become unassigned." : `Remove ${m.name} from this project?`)) return;
+    if (!(await ask(self ? "Leave this project? Tickets assigned to you become unassigned." : `Remove ${m.name} from this project?`))) return;
     try {
       await api.removeMember(projectId, m.user_id);
       if (self) onLeft();
@@ -543,7 +544,7 @@ function DangerZone({ isOwner, projectId }: { isOwner: boolean; projectId: numbe
     <button
       className="linkBtn dangerLink"
       onClick={async () => {
-        if (!confirm("Delete this project?\n\nIf it has no tickets it is deleted. If it has tickets, it is only hidden for everyone and nothing is lost. You can bring it back from “Hidden projects”.")) return;
+        if (!(await ask("Delete this project?\n\nIf it has no tickets it is deleted. If it has tickets, it is only hidden for everyone and nothing is lost. You can bring it back from “Hidden projects”."))) return;
         try {
           const r = await api.deleteProject(projectId);
           router.replace(`/app/projects?note=${r.result}`);

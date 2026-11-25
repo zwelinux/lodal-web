@@ -1,4 +1,5 @@
 "use client";
+import { ask } from "./DialogHost";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { api, token, type User } from "@/lib/api";
@@ -35,7 +36,7 @@ export default function SimpleBar() {
     router.replace("/");
   }
   async function deleteAccount() {
-    if (!confirm("Delete your account and all your data forever? This cannot be undone.")) return;
+    if (!(await ask("Delete your account and all your data forever? This cannot be undone."))) return;
     try {
       await api.deleteAccount();
       token.clear();

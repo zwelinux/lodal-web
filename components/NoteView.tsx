@@ -1,4 +1,5 @@
 "use client";
+import { ask } from "./DialogHost";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -149,7 +150,7 @@ export default function NoteView() {
 
   async function remove() {
     if (!note?.is_owner) return;
-    if (!confirm(`Delete "${note.title || "Untitled"}" for everyone?\n\nThis cannot be undone.`)) return;
+    if (!(await ask(`Delete "${note.title || "Untitled"}" for everyone?\n\nThis cannot be undone.`))) return;
     try {
       await api.deleteNote(id);
       dirty.current = false;
@@ -160,7 +161,7 @@ export default function NoteView() {
   }
 
   async function leave() {
-    if (!confirm("Stop seeing this note? The owner keeps it.")) return;
+    if (!(await ask("Stop seeing this note? The owner keeps it."))) return;
     try {
       await api.leaveNote(id);
       router.replace("/app/notes");

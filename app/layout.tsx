@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import DialogHost from "@/components/DialogHost";
 
 const jetbrains = JetBrains_Mono({
   variable: "--font-jetbrains",
@@ -23,7 +24,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <DialogHost />
+      </body>
     </html>
   );
 }

@@ -805,3 +805,12 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.04em; }
 .iconBtn:hover { border-color: var(--accent); color: var(--accent); }
 .iconBtn.danger:hover { border-color: #d64545; color: #d64545; }
 .iconBtn svg { width: 20px; height: 20px; }
+
+.askDialog { text-align: left; gap: 10px; max-width: 420px; box-shadow: 0 20px 60px rgba(0, 0, 0, .3); border: 1px solid var(--line); }
+.askDialog h2 { font-size: 19px; margin: 0; overflow-wrap: anywhere; }
+.askBody { white-space: pre-line; line-height: 1.5; overflow-wrap: anywhere; }
+.askDialog input { border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 10px; padding: 12px; font-size: 16px; }
+.askActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+.askActions .btn { min-height: 44px; }
+.btn.primary.dangerBtn { background: var(--danger); border-color: var(--danger); color: #fff; }
+.askOverlay { z-index: 100; }
