@@ -53,7 +53,6 @@ export function HiddenButton({ groups }: { groups: HiddenGroup[] }) {
         <svg {...svgProps}>
           <path d="M3 3l14 14M8.4 5.2A8 8 0 0 1 10 5c4 0 6.500 3.200 7.500 5a12 12 0 0 1-2.300 2.900M6.100 6.600A12 12 0 0 0 2.500 10c1 1.800 3.500 5 7.500 5 1.200 0 2.200-.3 3.100-.7M8.300 8.300a2 2 0 0 0 2.800 2.800" />
         </svg>
-        <span className="toolBadge">{total}</span>
       </button>
       {open && (
         <div className="toolPop" role="dialog" aria-label="Hidden subjects">
