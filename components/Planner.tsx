@@ -3,7 +3,8 @@ import { ask } from "./DialogHost";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { api, ApiError, token, type AssignedTicket, type Subject, type User } from "@/lib/api";
+import { CONTRIBUTE_URL } from "@/lib/legal";
+import { api, type CalendarEvent, ApiError, token, type AssignedTicket, type Subject, type User } from "@/lib/api";
 import { addDays, dayNum, toISO, longDay, monthShort, rangeLabel, today, weekdayShort, weekDays, weekStart } from "@/lib/dates";
 import { useDismiss } from "@/lib/useDismiss";
 import { useSubjectDnd } from "@/lib/useSubjectDnd";
@@ -61,6 +62,7 @@ function PlannerInner() {
   const [hideDay, setHideDay] = useState<Record<string, number[]>>(() => (typeof window === "undefined" ? {} : loadHideDay()));
   const [cells, setCells] = useState<Cells>({});
   const [assigned, setAssigned] = useState<AssignedTicket[]>([]);
+  const [gcal, setGcal] = useState<CalendarEvent[]>([]);
   const [day, setDay] = useState(today());
   const [loaded, setLoaded] = useState(false);
   const [sync, setSync] = useState<Sync>("saved");
@@ -125,6 +127,7 @@ function PlannerInner() {
       setSubjects(g.subjects);
       setHiddenSubjects(g.hidden_subjects ?? []);
       setAssigned(g.assigned ?? []);
+      setGcal(g.calendar ?? []);
       setCells((prev) => {
         const next: Cells = {};
         for (const [k, v] of Object.entries(prev)) {
@@ -426,6 +429,9 @@ function PlannerInner() {
               <button role="menuitem" onClick={() => router.push("/app/connect")}>
                 Browser extension
               </button>
+              <a role="menuitem" className="menuLink" href={CONTRIBUTE_URL} target="_blank" rel="noreferrer">
+                Contribute ♥
+              </a>
               <button role="menuitem" onClick={logout}>
                 Sign out
               </button>
@@ -467,6 +473,7 @@ function PlannerInner() {
           purgeSubject={purgeSubject}
           reorderSubjects={reorderSubjects}
           assigned={assigned}
+          gcal={gcal}
           toggleTicket={toggleTicket}
           day={day}
           setDay={setDay}
@@ -486,6 +493,7 @@ function PlannerInner() {
           purgeSubject={purgeSubject}
           reorderSubjects={reorderSubjects}
           assigned={assigned}
+          gcal={gcal}
           toggleTicket={toggleTicket}
           moveTask={moveTask}
           view={view}
@@ -513,6 +521,7 @@ function PlannerInner() {
 
 type SubjectActions = {
   assigned: AssignedTicket[];
+  gcal: CalendarEvent[];
   toggleTicket: (id: number) => void;
   subjects: Subject[];
   cells: Cells;
@@ -570,7 +579,7 @@ function SubjectName({ s, rename }: { s: Subject; rename: (id: number, n: string
 
 const subjColor = (i: number) => `hsl(${(i * 57 + 165) % 360} 52% 56%)`;
 
-function WeekGrid({ days, view, setView, moveTask, assigned, toggleTicket, hiddenSubjects, restoreSubject, purgeSubject, reorderSubjects, hideForDay, showForDay, hiddenToday, dayIsToday, subjects, cells, setCell, addSubject, renameSubject, removeSubject }: SubjectActions & { hideForDay?: (id: number) => void; showForDay: (id: number) => void; hiddenToday: Subject[]; dayIsToday: boolean; days: string[]; view: "today" | "week"; setView: (v: "today" | "week") => void; moveTask: (p: DragPayload, toSid: number, toDate: string) => void }) {
+function WeekGrid({ days, view, setView, moveTask, assigned, gcal, toggleTicket, hiddenSubjects, restoreSubject, purgeSubject, reorderSubjects, hideForDay, showForDay, hiddenToday, dayIsToday, subjects, cells, setCell, addSubject, renameSubject, removeSubject }: SubjectActions & { hideForDay?: (id: number) => void; showForDay: (id: number) => void; hiddenToday: Subject[]; dayIsToday: boolean; days: string[]; view: "today" | "week"; setView: (v: "today" | "week") => void; moveTask: (p: DragPayload, toSid: number, toDate: string) => void }) {
   const t = today();
   const dnd = useSubjectDnd(subjects.map((x) => x.id), reorderSubjects);
   return (
@@ -641,6 +650,21 @@ function WeekGrid({ days, view, setView, moveTask, assigned, toggleTicket, hidde
             ))}
           </div>
         ))}
+        {days.some((d) => gcal.some((e) => e.date === d)) && (
+          <div style={{ display: "contents" }}>
+            <div className="gSubj proj">
+              <span className="projLink gcalName">
+                <CalendarSmall />
+                Google Calendar
+              </span>
+            </div>
+            {days.map((d) => (
+              <div key={d} className={`gCell projCell ${d === t ? "isToday" : ""}`}>
+                <GcalList events={gcal.filter((e) => e.date === d)} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       {subjects.length === 0 && assigned.length === 0 && hiddenToday.length === 0 && <p className="empty">Press the + button above to add your first subject, for example “Work” or “Family”.</p>}
     </main>
@@ -698,6 +722,39 @@ function ProjectTickets({ tickets, toggle }: { tickets: AssignedTicket[]; toggle
           <span className="pTitle">{a.title}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+function CalendarSmall() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="4" y="5" width="16" height="15" rx="3" />
+      <path d="M4 10h16M8 3v4M16 3v4" />
+    </svg>
+  );
+}
+
+/** Events from the person's Lodal calendar in Google. Read only: they are changed in Google Calendar. */
+function GcalList({ events }: { events: CalendarEvent[] }) {
+  return (
+    <div className="tasks projTasks gcalList">
+      {events.map((e) => {
+        const body = (
+          <>
+            {e.time && <b>{e.time}</b>} <span>{e.title}</span>
+          </>
+        );
+        return e.link ? (
+          <a key={e.id} className="gcalItem" href={e.link} target="_blank" rel="noreferrer" title="Open the Google Meet call">
+            {body}
+          </a>
+        ) : (
+          <div key={e.id} className="gcalItem">
+            {body}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -813,6 +870,7 @@ function DayView({
   cells,
   setCell,
   assigned,
+  gcal,
   toggleTicket,
   hiddenSubjects,
   restoreSubject,
@@ -856,6 +914,17 @@ function DayView({
           <ProjectTickets tickets={assigned.filter((a) => a.project === pid && a.date === day)} toggle={toggleTicket} />
         </section>
       ))}
+      {gcal.some((e) => e.date === day) && (
+        <section className="card projCard2">
+          <h3>
+            <span className="projLink gcalName">
+              <CalendarSmall />
+              Google Calendar
+            </span>
+          </h3>
+          <GcalList events={gcal.filter((e) => e.date === day)} />
+        </section>
+      )}
       {subjects.length === 0 && assigned.length === 0 && <p className="empty">Add your first subject to begin, for example “Work” or “Family”.</p>}
 
       <button className="linkBtn manageBtn" onClick={() => setManage(!manage)}>

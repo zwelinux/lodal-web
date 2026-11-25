@@ -1,3 +1,4 @@
+import { CONTRIBUTE_URL } from "@/lib/legal";
 import Link from "next/link";
 import LogoMark from "@/components/LogoMark";
 import RedirectIfLoggedIn from "@/components/RedirectIfLoggedIn";
@@ -59,6 +60,9 @@ export default function Home() {
       <footer className="landFoot">
         <Link href="/privacy">Privacy policy</Link>
         <Link href="/terms">Terms of use</Link>
+        <a href={CONTRIBUTE_URL} target="_blank" rel="noreferrer">
+          Contribute to grow Lodal together ♥
+        </a>
       </footer>
     </main>
   );

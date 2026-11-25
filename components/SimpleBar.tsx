@@ -2,6 +2,7 @@
 import { ask } from "./DialogHost";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { CONTRIBUTE_URL } from "@/lib/legal";
 import { api, token, type User } from "@/lib/api";
 import { applyTheme, effectiveTheme, getTheme, type ThemeChoice } from "@/lib/theme";
 import { useDismiss } from "@/lib/useDismiss";
@@ -88,6 +89,9 @@ export default function SimpleBar() {
               <button role="menuitem" onClick={() => router.push("/app/connect")}>
               Browser extension
             </button>
+            <a role="menuitem" className="menuLink" href={CONTRIBUTE_URL} target="_blank" rel="noreferrer">
+              Contribute ♥
+            </a>
             <button role="menuitem" onClick={logout}>
               Sign out
             </button>

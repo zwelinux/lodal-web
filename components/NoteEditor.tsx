@@ -20,6 +20,7 @@ type Props = {
 };
 
 const PICTURE = /^image\/(jpeg|png|webp|gif)$/;
+const DOCUMENT = /\.(pdf|docx?|xlsx?|pptx?|txt|md|csv|zip)$/i; // kept in the owner's Google Drive and shown as a link
 
 /** The writing surface. Type "# " for a heading, "- " for a list, "[ ] " for a checklist. Stored as plain Markdown. */
 export default function NoteEditor({ value, editable, loadKey, onChange, onReady, onUpload, onError }: Props) {
@@ -35,15 +36,19 @@ export default function NoteEditor({ value, editable, loadKey, onChange, onReady
     const up = handle.current.onUpload;
     if (!up || !ed.current) return;
     for (const f of files) {
-      if (!PICTURE.test(f.type)) {
-        handle.current.onError?.("Please choose a JPG, PNG, WebP or GIF picture.");
+      const doc = DOCUMENT.test(f.name);
+      if (!doc && !PICTURE.test(f.type)) {
+        handle.current.onError?.("Please choose a picture (JPG, PNG, WebP, GIF) or a document (PDF, Word, Excel, PowerPoint, text, CSV, ZIP).");
         continue;
       }
       setBusy((n) => n + 1);
       try {
         const src = await up(f);
         const e = ed.current;
-        if (e) e.chain().focus().insertContentAt(at ?? e.state.selection.to, { type: "image", attrs: { src, alt: "" } }).run();
+        if (e) {
+          const piece = doc ? { type: "text", text: `📎 ${f.name}`, marks: [{ type: "link", attrs: { href: src } }] } : { type: "image", attrs: { src, alt: "" } };
+          e.chain().focus().insertContentAt(at ?? e.state.selection.to, piece).run();
+        }
       } catch (err) {
         handle.current.onError?.(err instanceof Error ? err.message : "Could not upload the picture.");
       }
@@ -67,14 +72,14 @@ export default function NoteEditor({ value, editable, loadKey, onChange, onReady
     editorProps: {
       attributes: { class: "noteProse", "aria-label": "Note", role: "textbox", "aria-multiline": "true" },
       handlePaste: (_view, event) => {
-        const files = [...(event.clipboardData?.files ?? [])].filter((f) => f.type.startsWith("image/"));
+        const files = [...(event.clipboardData?.files ?? [])].filter((f) => f.type.startsWith("image/") || DOCUMENT.test(f.name));
         if (!files.length || !handle.current.onUpload) return false;
         event.preventDefault();
         void addPictures(files);
         return true;
       },
       handleDrop: (view, event, _slice, moved) => {
-        const files = [...(event.dataTransfer?.files ?? [])].filter((f) => f.type.startsWith("image/"));
+        const files = [...(event.dataTransfer?.files ?? [])].filter((f) => f.type.startsWith("image/") || DOCUMENT.test(f.name));
         if (moved || !files.length || !handle.current.onUpload) return false;
         event.preventDefault();
         void addPictures(files, view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos);
@@ -155,15 +160,15 @@ function Toolbar({ editor, onPick, busy }: { editor: Editor; onPick?: (files: Fi
       {onPick && (
         <>
           <i className="tbSep" aria-hidden="true" />
-          <button type="button" className="tbBtn" aria-label="Add a picture" title="Add a picture" onMouseDown={(e) => e.preventDefault()} onClick={() => fileInput.current?.click()}>
-            🖼
+          <button type="button" className="tbBtn" aria-label="Add a picture or file" title="Add a picture or file" onMouseDown={(e) => e.preventDefault()} onClick={() => fileInput.current?.click()}>
+            📎
           </button>
           <input
             ref={fileInput}
             type="file"
             hidden
             multiple
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/jpeg,image/png,image/webp,image/gif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.zip"
             onChange={(e) => {
               const files = [...(e.target.files ?? [])];
               e.target.value = ""; // so the same picture can be chosen again
