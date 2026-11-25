@@ -68,7 +68,7 @@ export default function DriveSettings() {
       <SimpleBar />
       <main className="projWrap">
         <h1 className="pageTitle">Google Drive</h1>
-        <p className="pageSub">Keep the pictures in your notes in your own Google Drive.</p>
+        <p className="pageSub">Keep your notes and their pictures in your own Google Drive.</p>
         {flash && (
           <p className={flash[1] ? "error" : "fine"} role="status">
             {flash[0]}
@@ -89,21 +89,25 @@ export default function DriveSettings() {
         {st && st.enabled && !st.connected && (
           <div className="emptyBox">
             <b>Not connected</b>
-            <p>Connect your own Google Drive. Pictures you add to your notes are saved in a folder called Lodal in your Drive, so you own them and they do not use Lodal&apos;s space.</p>
+            <p>Connect your own Google Drive. Lodal keeps a copy of each of your notes as a text file, and the pictures you add, in a folder called Lodal in your Drive. Files keep the same names as in Lodal.</p>
             <button className="btn primary big" style={{ marginTop: 6 }} onClick={connect} disabled={busy}>
               Connect Google Drive
             </button>
             <ul className="authPoints" style={{ marginTop: 14 }}>
               <li>Lodal can only see the files it makes itself, in its own Lodal folder. Nothing else in your Drive.</li>
-              <li>You can disconnect any time. Your pictures are copied back into Lodal.</li>
+              <li>Notes go in Lodal/Notes as .md files named after the note, and update a few seconds after you change them. Pictures go in Lodal/Pictures with the name you uploaded.</li>
+              <li>You can disconnect any time. Your pictures are copied back into Lodal, and your note files stay in your Drive.</li>
             </ul>
           </div>
         )}
         {st && st.enabled && st.connected && (
           <div className="emptyBox">
             <b>Connected{st.email ? ` as ${st.email}` : ""}</b>
-            <p>New pictures in your notes are saved in the Lodal folder in your Google Drive. {st.pictures > 0 ? `${st.pictures} picture${st.pictures === 1 ? " is" : "s are"} there now.` : "None yet."}</p>
-            <p className="fine">If you delete the Lodal folder or a picture in Drive, that picture disappears from your notes too.</p>
+            <p>
+              {st.notes} note{st.notes === 1 ? "" : "s"} copied to Lodal/Notes
+              {st.pictures > 0 ? `, and ${st.pictures} picture${st.pictures === 1 ? "" : "s"} in Lodal/Pictures` : ""}. Changes you make to a note update its file a few seconds later.
+            </p>
+            <p className="fine">The note files are copies: changing them in Drive does not change your note. If you delete a picture in Drive, it disappears from your notes too.</p>
             <button className="btn" onClick={() => disconnect()} disabled={busy}>
               Disconnect
             </button>

@@ -34,6 +34,12 @@
       <section id="add" role="tabpanel" hidden>
         <label for="subject">Subject</label>
         <select id="subject"></select>
+        <button id="newSubjectBtn" class="link" type="button">+ New subject</button>
+        <div id="newSubject" hidden>
+          <label for="subjectName">New subject name</label>
+          <input id="subjectName" type="text" maxlength="120" placeholder="For example Clients" autocomplete="off" />
+          <button id="createSubject" class="primary" type="button">Create subject</button>
+        </div>
         <label for="task">New task for today</label>
         <input id="task" type="text" maxlength="300" placeholder="What needs doing?" autocomplete="off" />
         <button id="addBtn" class="primary">Add task</button>

@@ -28,6 +28,39 @@ export default function Page() {
         </li>
       </ul>
 
+      <h2>Google Drive, Google Calendar and the browser extension</h2>
+      <p>These are optional. Nothing below happens unless you connect it yourself, and you can disconnect any time.</p>
+      <ul>
+        <li>
+          <b>Google Drive:</b> if you connect it, Lodal makes a folder called Lodal in <i>your</i> Drive. It keeps a copy of each of your notes there as a text file, and the
+          pictures you add, using the same names as in Lodal. Lodal asks Google for the narrow &quot;drive.file&quot; permission, so it can only see and change the files it
+          made itself, never the rest of your Drive. When you disconnect, your pictures are copied back into Lodal and the note files stay in your Drive.
+        </li>
+        <li>
+          <b>Google Calendar:</b> if you connect it, Lodal makes a separate calendar called Lodal in your Google Calendar and puts your dated tasks and the project tickets
+          assigned to you in it, as all-day events. Lodal asks for the narrow &quot;calendar.app.created&quot; permission, so it can only manage the calendar it made, never your
+          other calendars or events. Disconnecting removes that calendar.
+        </li>
+        <li>
+          <b>Keeping the connection:</b> to keep Drive or Calendar up to date, Lodal stores a key from Google (a refresh token) for you, encrypted. It is used only for the
+          two things above. You can also remove Lodal&apos;s access any time in your Google Account settings.
+        </li>
+        <li>
+          <b>Browser extension:</b> the Lodal extension shows your tasks, lets you add tasks and subjects, and saves a page as a note. It stores a Lodal sign-in key in your browser.
+          Only when you press <b>Save to Notes</b> does it read the title, address and any text you selected on the page you are on, and send them to your Lodal notes. It does not read
+          pages in the background, does not track your browsing, and sends nothing anywhere except to Lodal.
+        </li>
+        <li>
+          <b>Proof of a note:</b> if you make a dated proof of a note, only a fingerprint of it (a SHA-256 hash, not the text) is sent to the free public OpenTimestamps network,
+          which anchors it in Bitcoin.
+        </li>
+      </ul>
+      <p>
+        Lodal&apos;s use and transfer of information received from Google APIs follows the{" "}
+        <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements. We do not use
+        this data for advertising and we do not sell it.
+      </p>
+
       <h2>What we do not do</h2>
       <ul>
         <li>We do not sell your information.</li>

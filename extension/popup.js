@@ -161,6 +161,27 @@ async function addTask() {
   $("addBtn").disabled = false;
 }
 
+async function createSubject() {
+  const name = $("subjectName").value.replace(/\s+/g, " ").trim();
+  if (!name) return;
+  $("createSubject").disabled = true;
+  say("");
+  try {
+    const sub = await call("/subjects", { method: "POST", body: JSON.stringify({ name }) });
+    $("subject").appendChild(new Option(sub.name, sub.id));
+    $("subject").value = sub.id;
+    $("subjectName").value = "";
+    $("newSubject").hidden = true;
+    $("newSubjectBtn").hidden = false;
+    await loadGrid();
+    $("task").focus();
+    say(`Created "${sub.name}". Now add a task to it.`);
+  } catch (e) {
+    say(e.message, true);
+  }
+  $("createSubject").disabled = false;
+}
+
 async function readPage() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -231,6 +252,13 @@ function wire() {
   $("addBtn").addEventListener("click", addTask);
   $("task").addEventListener("keydown", (e) => e.key === "Enter" && addTask());
   $("saveBtn").addEventListener("click", saveNote);
+  $("newSubjectBtn").addEventListener("click", () => {
+    $("newSubject").hidden = false;
+    $("newSubjectBtn").hidden = true;
+    $("subjectName").focus();
+  });
+  $("createSubject").addEventListener("click", createSubject);
+  $("subjectName").addEventListener("keydown", (e) => e.key === "Enter" && createSubject());
   $("signout").addEventListener("click", async () => {
     await chrome.storage.local.remove("token");
     showConnect();

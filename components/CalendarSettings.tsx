@@ -107,7 +107,8 @@ export default function CalendarSettings() {
             <ul className="authPoints" style={{ marginTop: 14 }}>
               <li>Lodal makes its own calendar. It cannot see or change your other calendars or events.</li>
               <li>It goes one way: from Lodal to Google. Changes you make in Google are not sent back.</li>
-              <li>Events are all-day and never make you look busy. Ticked tasks get a ✓.</li>
+              <li>A task you add for today appears at the time you added it, as a 30 minute event. Tasks for other days, and project tickets, are all-day events.</li>
+              <li>Events never make you look busy. Ticked tasks get a ✓.</li>
             </ul>
           </div>
         )}
