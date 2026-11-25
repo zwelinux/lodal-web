@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lodal</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="top">
+      <span class="logo"><img src="icons/icon-32.png" alt="" width="22" height="22" />Lodal</span>
+      <a id="open" href="#" target="_blank" rel="noopener">Open Lodal</a>
+    </header>
+
+    <main id="connect" hidden>
+      <h1>Connect to Lodal</h1>
+      <p>See your day, add tasks and save pages without leaving your browser.</p>
+      <button id="connectBtn" class="primary">Connect with your account</button>
+      <p class="hint">This opens Lodal. Sign in with Google there, then press Connect.</p>
+    </main>
+
+    <div id="app" hidden>
+      <nav class="tabs" role="tablist">
+        <button role="tab" id="tabToday" aria-selected="true">Today</button>
+        <button role="tab" id="tabAdd" aria-selected="false">Add</button>
+        <button role="tab" id="tabSave" aria-selected="false">Save page</button>
+      </nav>
+
+      <section id="today" role="tabpanel">
+        <p id="date" class="muted"></p>
+        <div id="list"></div>
+      </section>
+
+      <section id="add" role="tabpanel" hidden>
+        <label for="subject">Subject</label>
+        <select id="subject"></select>
+        <label for="task">New task for today</label>
+        <input id="task" type="text" maxlength="300" placeholder="What needs doing?" autocomplete="off" />
+        <button id="addBtn" class="primary">Add task</button>
+      </section>
+
+      <section id="save" role="tabpanel" hidden>
+        <div class="page">
+          <b id="pageTitle"></b>
+          <span id="pageUrl" class="muted"></span>
+        </div>
+        <label for="note">Your note (optional)</label>
+        <textarea id="note" rows="3" maxlength="2000" placeholder="Why does this matter?"></textarea>
+        <label class="check"><input id="useSel" type="checkbox" checked /> <span id="selLabel">Include the text I selected</span></label>
+        <button id="saveBtn" class="primary">Save to Notes</button>
+        <p class="muted">Saved in a folder called Web clips.</p>
+      </section>
+
+      <p id="msg" class="msg" role="status" aria-live="polite"></p>
+      <footer><button id="signout" class="link">Disconnect</button></footer>
+    </div>
+    <script src="config.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

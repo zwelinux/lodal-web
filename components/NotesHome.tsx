@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, ApiError, token, type NoteListItem, type NotesList } from "@/lib/api";
+import { ask, askText } from "./DialogHost";
 import { ago } from "@/lib/ago";
 import SimpleBar from "./SimpleBar";
 
@@ -13,6 +14,7 @@ export default function NotesHome() {
   const [data, setData] = useState<NotesList | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [folder, setFolder] = useState<number | "none" | null>(null); // null = all notes
 
   useEffect(() => {
     if (!token.get()) {
@@ -42,11 +44,49 @@ export default function NotesHome() {
   async function create() {
     setBusy(true);
     try {
-      const n = await api.createNote();
+      const n = await api.createNote(typeof folder === "number" ? folder : null);
       router.push(`/app/notes/${n.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not make a note.");
       setBusy(false);
+    }
+  }
+
+  const reload = () => api.notes(q.trim()).then((d) => setData(d)).catch(() => {});
+  const folders = data?.folders ?? [];
+  const current = typeof folder === "number" ? folders.find((f) => f.id === folder) : undefined;
+  const mine = data ? data.mine.filter((n) => (folder === null ? true : folder === "none" ? n.folder === null : n.folder === folder)) : [];
+
+  async function addFolder() {
+    const name = await askText("New folder", { hint: "For example Clients" });
+    if (!name) return;
+    try {
+      const f = await api.createFolder(name);
+      await reload();
+      setFolder(f.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not make the folder.");
+    }
+  }
+  async function renameFolder() {
+    if (!current) return;
+    const name = await askText("Rename folder", { value: current.name });
+    if (!name || name === current.name) return;
+    try {
+      await api.renameFolder(current.id, name);
+      await reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not rename the folder.");
+    }
+  }
+  async function removeFolder() {
+    if (!current || !(await ask(`Delete the folder "${current.name}"?\n\nYour notes are not deleted. They move to "No folder".`))) return;
+    try {
+      await api.deleteFolder(current.id);
+      setFolder(null);
+      await reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not delete the folder.");
     }
   }
 
@@ -65,6 +105,37 @@ export default function NotesHome() {
           </button>
         </div>
 
+        {data && (folders.length > 0 || data.mine.length > 0) && (
+          <div className="folderBar" role="tablist" aria-label="Folders">
+            <button role="tab" aria-selected={folder === null} className={`folderChip ${folder === null ? "on" : ""}`} onClick={() => setFolder(null)}>
+              All
+            </button>
+            {folders.map((f) => (
+              <button key={f.id} role="tab" aria-selected={folder === f.id} className={`folderChip ${folder === f.id ? "on" : ""}`} onClick={() => setFolder(f.id)}>
+                {f.name} <small>{f.count}</small>
+              </button>
+            ))}
+            {folders.length > 0 && (
+              <button role="tab" aria-selected={folder === "none"} className={`folderChip ${folder === "none" ? "on" : ""}`} onClick={() => setFolder("none")}>
+                No folder
+              </button>
+            )}
+            <button className="folderChip add" onClick={addFolder} aria-label="New folder" title="New folder">
+              + Folder
+            </button>
+          </div>
+        )}
+        {current && (
+          <div className="folderTools">
+            <button className="linkBtn" onClick={renameFolder}>
+              Rename
+            </button>
+            <button className="linkBtn dangerLink" onClick={removeFolder}>
+              Delete folder
+            </button>
+          </div>
+        )}
+
         {error && (
           <p className="error" role="alert">
             {error}
@@ -78,8 +149,9 @@ export default function NotesHome() {
           </div>
         )}
 
-        {data && data.mine.length > 0 && <NoteGroup title={data.shared.length ? "Your notes" : ""} items={data.mine} />}
-        {data && data.shared.length > 0 && <NoteGroup title="Shared with you" items={data.shared} />}
+        {data && folder !== null && mine.length === 0 && !q && <p className="empty">Nothing in this folder yet. Open a note and choose this folder, or press New note.</p>}
+        {data && mine.length > 0 && <NoteGroup title={data.shared.length && folder === null ? "Your notes" : ""} items={mine} />}
+        {data && folder === null && data.shared.length > 0 && <NoteGroup title="Shared with you" items={data.shared} />}
       </main>
     </div>
   );

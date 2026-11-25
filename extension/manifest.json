@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Lodal",
+  "version": "1.0.0",
+  "description": "Your Lodal day in the browser toolbar. See and tick today's tasks, add a task, or save the page you are reading as a note.",
+  "icons": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
+  "action": {
+    "default_title": "Lodal",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/icon-16.png", "32": "icons/icon-32.png" }
+  },
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["https://lodal.vps.webdock.cloud/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://lodal.yatyarzar.com/app/connect*", "https://lodal.netlify.app/app/connect*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

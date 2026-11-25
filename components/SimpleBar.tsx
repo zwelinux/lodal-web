@@ -79,6 +79,15 @@ export default function SimpleBar() {
                 </button>
               ))}
             </div>
+            <button role="menuitem" onClick={() => router.push("/app/calendar")}>
+                Google Calendar
+              </button>
+              <button role="menuitem" onClick={() => router.push("/app/drive")}>
+                Google Drive
+              </button>
+              <button role="menuitem" onClick={() => router.push("/app/connect")}>
+              Browser extension
+            </button>
             <button role="menuitem" onClick={logout}>
               Sign out
             </button>

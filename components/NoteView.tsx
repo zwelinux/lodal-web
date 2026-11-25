@@ -3,9 +3,11 @@ import { ask } from "./DialogHost";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, ApiError, token, type NoteDetail } from "@/lib/api";
+import { api, ApiError, token, type NoteDetail, type NoteFolder } from "@/lib/api";
 import { ago } from "@/lib/ago";
 import NoteEditor from "./NoteEditor";
+import NoteHistory from "./NoteHistory";
+import NoteProof from "./NoteProof";
 import ShareNote from "./ShareNote";
 import SimpleBar from "./SimpleBar";
 
@@ -25,6 +27,9 @@ export default function NoteView() {
   const [conflict, setConflict] = useState<NoteDetail | null>(null);
   const [error, setError] = useState("");
   const [shareOpen, setShareOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [proofOpen, setProofOpen] = useState(false);
+  const [folders, setFolders] = useState<NoteFolder[]>([]);
 
   const titleBox = useRef<HTMLInputElement>(null);
   const body = useRef(""); // the newest text in the editor
@@ -69,6 +74,10 @@ export default function NoteView() {
       clearTimeout(first);
     };
   }, [id, router, apply, fail]);
+
+  useEffect(() => {
+    if (note?.is_owner) api.noteFolders().then(setFolders).catch(() => {});
+  }, [note?.is_owner]);
 
   // a brand new note: start in the title
   const fresh = note && !note.title && !note.body;
@@ -182,6 +191,15 @@ export default function NoteView() {
     );
   if (!note) return <div className="loading">Loading note…</div>;
 
+  async function moveTo(value: string) {
+    try {
+      const n = await api.moveNote(id, value ? Number(value) : null);
+      setNote((cur) => (cur ? { ...cur, folder: n.folder } : cur));
+    } catch (e) {
+      fail(e);
+    }
+  }
+
   const canEdit = note.can_edit;
   return (
     <div className="app narrow">
@@ -196,6 +214,26 @@ export default function NoteView() {
               <span className={`saveState ${status}`} role="status">
                 {LABEL[status]}
               </span>
+            )}
+            {canEdit && (
+              <button className="linkBtn" onClick={() => setHistoryOpen(true)}>
+                History
+              </button>
+            )}
+            {note.is_owner && (
+              <button className="linkBtn" onClick={() => setProofOpen(true)}>
+                Proof
+              </button>
+            )}
+            {note.is_owner && folders.length > 0 && (
+              <select className="folderPick" aria-label="Folder" value={note.folder ?? ""} onChange={(e) => moveTo(e.target.value)}>
+                <option value="">No folder</option>
+                {folders.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
             )}
             {note.is_owner && (
               <button className="btn" onClick={() => setShareOpen(true)}>
@@ -292,6 +330,8 @@ export default function NoteView() {
           onError={setError}
         />
       </main>
+      {proofOpen && <NoteProof noteId={id} onClose={() => setProofOpen(false)} />}
+      {historyOpen && <NoteHistory noteId={id} onClose={() => setHistoryOpen(false)} onRestored={apply} />}
       {shareOpen && <ShareNote note={note} onClose={() => setShareOpen(false)} onChange={setNote} />}
     </div>
   );

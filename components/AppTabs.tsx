@@ -38,8 +38,9 @@ export default function AppTabs() {
   const inProjects = path.startsWith("/app/projects");
   const inNotes = path.startsWith("/app/notes");
   const inPulse = path.startsWith("/app/pulse");
+  const elsewhere = path.startsWith("/app/connect") || path.startsWith("/app/drive") || path.startsWith("/app/calendar"); // a settings-style page: none of the four
   const tabs = [
-    { href: "/app", label: "My planner", icon: ICONS.planner, on: !inProjects && !inNotes && !inPulse },
+    { href: "/app", label: "My planner", icon: ICONS.planner, on: !inProjects && !inNotes && !inPulse && !elsewhere },
     { href: "/app/projects", label: "Projects", icon: ICONS.projects, on: inProjects },
     { href: "/app/notes", label: "Notes", icon: ICONS.notes, on: inNotes },
     { href: "/app/pulse", label: "Pulse", icon: ICONS.pulse, on: inPulse },

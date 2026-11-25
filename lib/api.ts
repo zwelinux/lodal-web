@@ -42,10 +42,15 @@ export type PublicReport = {
   subjects: ProjectSubject[];
   tickets: { id: number; title: string; date: string; subject: number | null; done: boolean }[];
 };
-export type NoteListItem = { id: number; title: string; snippet: string; updated_at: string; mine: boolean; can_edit: boolean; owner: string; shared: boolean };
-export type NotesList = { mine: NoteListItem[]; shared: NoteListItem[] };
+export type NoteListItem = { id: number; title: string; snippet: string; updated_at: string; mine: boolean; folder: number | null; can_edit: boolean; owner: string; shared: boolean };
+export type NoteFolder = { id: number; name: string; count: number };
+export type NotesList = { mine: NoteListItem[]; shared: NoteListItem[]; folders: NoteFolder[] };
+export type NoteVersionItem = { id: number; title: string; snippet: string; saved_by: string; saved_at: string; size: number };
+export type NoteProofItem = { id: number; created_at: string; note_version: number; digest: string; status: "pending" | "confirmed"; block_height: number | null; file_name: string };
+export type DriveStatus = { enabled: boolean; connected: boolean; email: string; pictures: number };
+export type CalendarStatus = { enabled: boolean; connected: boolean; email: string; last_synced_at: string | null; error: string; events: number };
 export type NoteShare = { id: number; email: string; can_edit: boolean };
-export type NoteDetail = { id: number; title: string; body: string; version: number; updated_at: string; updated_by: string; is_owner: boolean; can_edit: boolean; owner: string; public_url: string; shares: NoteShare[] };
+export type NoteDetail = { id: number; title: string; body: string; version: number; updated_at: string; updated_by: string; is_owner: boolean; folder: number | null; can_edit: boolean; owner: string; public_url: string; shares: NoteShare[] };
 export type PublicNote = { title: string; body: string; updated_at: string };
 export type InvitePreview = { project: string; email: string; friend: boolean; invited_by: string | null; expired: boolean; accepted: boolean };
 
@@ -171,7 +176,41 @@ export const api = {
   setProjectPublic: (id: number, on: boolean) => call<ProjectDetail>(`/projects/${id}`, { method: "PATCH", body: body({ public: on }) }),
   publicReport: (token: string) => call<PublicReport>(`/public/${token}`),
   notes: (q = "") => call<NotesList>(`/notes${q ? `?q=${encodeURIComponent(q)}` : ""}`),
-  createNote: () => call<NoteDetail>("/notes", { method: "POST", body: body({ title: "", body: "" }) }),
+  createNote: (folder: number | null = null) => call<NoteDetail>("/notes", { method: "POST", body: body({ title: "", body: "", folder }) }),
+  noteVersions: (id: number) => call<NoteVersionItem[]>(`/notes/${id}/versions`),
+  noteVersion: (id: number, vid: number) => call<NoteVersionItem & { body: string }>(`/notes/${id}/versions/${vid}`),
+  restoreNoteVersion: (id: number, vid: number) => call<NoteDetail>(`/notes/${id}/versions/${vid}/restore`, { method: "POST" }),
+  noteProofs: (id: number) => call<NoteProofItem[]>(`/notes/${id}/proofs`),
+  createNoteProof: (id: number) => call<NoteProofItem>(`/notes/${id}/proofs`, { method: "POST" }),
+  /** Saves one of the two proof files ("file" is the text, "receipt" is the Bitcoin receipt). */
+  downloadNoteProof: async (id: number, proofId: number, kind: "file" | "receipt", name: string): Promise<void> => {
+    const t = token.get();
+    let res: Response;
+    try {
+      res = await fetch(`${API}/notes/${id}/proofs/${proofId}/${kind}`, { headers: t ? { Authorization: `Token ${t}` } : {} });
+    } catch {
+      throw new ApiError(0, "Can't reach the Lodal server. Check your internet.");
+    }
+    if (!res.ok) throw new ApiError(res.status, "Could not download the file.");
+    const url = URL.createObjectURL(await res.blob());
+    const a = Object.assign(document.createElement("a"), { href: url, download: kind === "receipt" ? `${name}.ots` : name });
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  },
+  calendar: () => call<CalendarStatus>("/calendar"),
+  calendarConnect: () => call<{ url: string }>("/calendar/connect", { method: "POST" }),
+  calendarSync: () => call<Pick<CalendarStatus, "last_synced_at" | "error" | "events">>("/calendar/sync", { method: "POST" }),
+  calendarDisconnect: () => call<{ ok: boolean }>("/calendar", { method: "DELETE" }),
+  drive: () => call<DriveStatus>("/drive"),
+  driveConnect: () => call<{ url: string }>("/drive/connect", { method: "POST" }),
+  driveDisconnect: (force = false) => call<{ ok: boolean; failed: number }>(`/drive${force ? "?force=1" : ""}`, { method: "DELETE" }),
+  noteFolders: () => call<NoteFolder[]>("/note-folders"),
+  createFolder: (name: string) => call<NoteFolder>("/note-folders", { method: "POST", body: body({ name }) }),
+  renameFolder: (id: number, name: string) => call<NoteFolder>(`/note-folders/${id}`, { method: "PATCH", body: body({ name }) }),
+  deleteFolder: (id: number) => call<void>(`/note-folders/${id}`, { method: "DELETE" }),
+  moveNote: (id: number, folder: number | null) => call<NoteDetail>(`/notes/${id}`, { method: "PATCH", body: body({ folder }) }),
   note: (id: number) => call<NoteDetail>(`/notes/${id}`),
   saveNote: (id: number, p: { title?: string; body?: string; base_version?: number }) => call<NoteDetail>(`/notes/${id}`, { method: "PATCH", body: body(p) }),
   setNotePublic: (id: number, on: boolean) => call<NoteDetail>(`/notes/${id}`, { method: "PATCH", body: body({ public: on }) }),
