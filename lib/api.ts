@@ -105,8 +105,6 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
 const body = (o: unknown) => JSON.stringify(o);
 
 export const api = {
-  register: (email: string, password: string) => call<{ token: string; user: User }>("/auth/register", { method: "POST", body: body({ email, password }) }),
-  login: (email: string, password: string) => call<{ token: string; user: User }>("/auth/login", { method: "POST", body: body({ email, password }) }),
   googleLogin: (idToken: string) => call<{ token: string; user: User }>("/auth/google", { method: "POST", body: body({ id_token: idToken }) }),
   logout: () => call<void>("/auth/logout", { method: "POST" }),
   deleteAccount: () => call<void>("/me/delete", { method: "DELETE" }),

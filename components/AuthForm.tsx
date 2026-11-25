@@ -19,11 +19,25 @@ declare global {
   }
 }
 
-/** Email and password (temporary, until Google sign-in is set up) plus Continue with Google when it is configured. */
-export default function AuthForm({ mode = "login" }: { mode?: "login" | "signup" }) {
-  const signup = mode === "signup";
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+/** A small, quiet picture of a day plan: a few tasks, some ticked. */
+function Illustration() {
+  return (
+    <svg className="authArt" viewBox="0 0 240 120" role="img" aria-label="A simple day plan with tasks being ticked off">
+      <rect x="20" y="12" width="200" height="96" rx="14" fill="var(--accent-soft)" />
+      <rect x="36" y="28" width="52" height="8" rx="4" fill="var(--accent)" />
+      {[0, 1, 2].map((i) => (
+        <g key={i} transform={`translate(0 ${i * 22})`}>
+          <circle cx="44" cy="55" r="7" fill={i < 2 ? "var(--accent)" : "none"} stroke="var(--accent)" strokeWidth="1.8" />
+          {i < 2 && <path d="M40.500 55l2.500 2.500 4.500-5" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />}
+          <rect x="60" y="51.500" width={[110, 84, 96][i]} height="7" rx="3.500" fill="var(--panel)" />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/** The one way in: Continue with Google. There are no passwords, and signing up and logging in are the same step. */
+export default function AuthForm() {
 
   const router = useRouter();
   const params = useSearchParams();
@@ -33,20 +47,6 @@ export default function AuthForm({ mode = "login" }: { mode?: "login" | "signup"
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const holder = useRef<HTMLDivElement>(null);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      const r = signup ? await api.register(email, password) : await api.login(email, password);
-      token.set(r.token);
-      router.replace(next);
-    } catch (err) {
-      setBusy(false);
-      setError(err instanceof Error ? err.message : "Something went wrong.");
-    }
-  }
 
   useEffect(() => {
     if (token.get()) router.replace(next);
@@ -98,45 +98,35 @@ export default function AuthForm({ mode = "login" }: { mode?: "login" | "signup"
           <LogoMark />
           Lodal
         </Link>
-        <h1>{signup ? "Create your account" : "Welcome back"}</h1>
+        <Illustration />
+        <h1>Plan your days, calmly.</h1>
+        <p className="fine authLead">One quiet place for your tasks, projects and notes. Alone or with your team.</p>
+        <ul className="authPoints">
+          <li>Every subject, every day, on one page</li>
+          <li>Share projects and track progress together</li>
+          <li>Write notes and send a link to clients</li>
+        </ul>
         {hint && (
           <p className="fine">
-            Use the account for <b>{hint}</b>.
+            Use the Google account for <b>{hint}</b>.
           </p>
         )}
-        <form onSubmit={submit} className="authFields">
-          <label htmlFor="email">Email</label>
-          <input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          <label htmlFor="password">Password</label>
-          <input id="password" type="password" autoComplete={signup ? "new-password" : "current-password"} required minLength={signup ? 8 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} />
-          <button className="btn primary big" type="submit" disabled={busy}>
-            {busy ? "One moment…" : signup ? "Sign up" : "Log in"}
-          </button>
-        </form>
-        {CLIENT_ID && (
-          <>
-            <p className="fine center">or</p>
-            <div className="googleSlot" aria-busy={busy}>
-              <div ref={holder} />
-            </div>
-          </>
+        {CLIENT_ID ? (
+          <div className="googleSlot" aria-busy={busy}>
+            <div ref={holder} />
+            {busy && <p className="fine center">One moment…</p>}
+          </div>
+        ) : (
+          <p className="error" role="alert">
+            Google sign-in is not set up yet.
+          </p>
         )}
         {error && (
           <p className="error" role="alert">
             {error}
           </p>
         )}
-        <p className="fine center">
-          {signup ? (
-            <>
-              Already have an account? <Link href="/login">Log in</Link>
-            </>
-          ) : (
-            <>
-              New here? <Link href="/signup">Sign up</Link>
-            </>
-          )}
-        </p>
+        <p className="fine center">No password to remember. New here? Just continue and we set up your account.</p>
         <p className="fine center">
           By continuing you agree to the <Link href="/terms">Terms</Link> and the <Link href="/privacy">Privacy Policy</Link>.
         </p>
